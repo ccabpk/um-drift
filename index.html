@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UM Drift</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #87CEEB;
+            font-family: sans-serif;
+            touch-action: none;
+            user-select: none;
+        }
+        #header-bar {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .hud-box {
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        #game-title-hud {
+            color: #f1c40f;
+            font-size: 17px;
+            letter-spacing: 0.5px;
+        }
+        #mode-btn {
+            position: absolute;
+            top: 65px;
+            right: 15px;
+            background: rgba(52, 152, 219, 0.85);
+            color: #fff;
+            border: 2px solid #fff;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 15;
+            cursor: pointer;
+        }
+        #mode-btn:active {
+            transform: scale(0.95);
+        }
+        .controls {
+            position: absolute;
+            bottom: 25px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-sizing: border-box;
+            z-index: 10;
+        }
+        .btn-group {
+            display: flex;
+            gap: 15px;
+        }
+        .ctrl-btn {
+            width: 65px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.35);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            color: #000;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .ctrl-btn:active {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(0.95);
+        }
+        #btn-gas { background: rgba(46, 204, 113, 0.5); }
+        #btn-brake { background: rgba(231, 76, 60, 0.5); }
+    </style>
+</head>
+<body>
+
+    <div id="header-bar">
+        <div class="hud-box">سکور (Coins): <span id="score">0</span></div>
+        <div class="hud-box" id="game-title-hud">UM Drift</div>
+    </div>
+
+    <button id="mode-btn">پیدل چلیں (Exit Car)</button>
+
+    <!-- موبائل کنٹرول بٹن -->
+    <div class="controls">
+        <div class="btn-group">
+            <div class="ctrl-btn" id="btn-left">◀</div>
+            <div class="ctrl-btn" id="btn-right">▶</div>
+        </div>
+        <div class="btn-group">
+            <div class="ctrl-btn" id="btn-brake">▼</div>
+            <div class="ctrl-btn" id="btn-gas">▲</div>
+        </div>
+    </div>
+
+    <!-- Three.js لائبریری -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // 1. سین (Scene)، کیمرہ اور رینڈرر سیٹ اپ
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87CEEB);
+        scene.fog = new THREE.Fog(0x87CEEB, 30, 150);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // 2. روشنی (Lighting)
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+        dirLight.position.set(50, 100, 50);
+        scene.add(dirLight);
+
+        // 3. زمین اور سڑکیں (Ground & City Grid)
+        const groundGeo = new THREE.PlaneGeometry(500, 500);
+        const groundMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        scene.add(ground);
+
+        const gridHelper = new THREE.GridHelper(500, 50, 0xffffff, 0x555555);
+        scene.add(gridHelper);
+
+        // ٹیکسٹ ٹیکسچر بنانے والا فنکشن
+        function createTextTexture(text, bgColor, textColor) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.font = 'bold 48px sans-serif';
+            ctx.fillStyle = textColor;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // 3D کردار بنانے والا فنکشن (Usama اور Musa)
+        function createCharacter(name, shirtColor, pantsColor, scale = 1) {
+            const charGroup = new THREE.Group();
+
+            // ٹانگیں
+            const legGeo = new THREE.BoxGeometry(0.22, 0.65, 0.24);
+            const legMat = new THREE.MeshLambertMaterial({ color: pantsColor });
+            const leftLeg = new THREE.Mesh(legGeo, legMat);
+            leftLeg.position.set(-0.16, 0.325, 0);
+            const rightLeg = new THREE.Mesh(legGeo, legMat);
+            rightLeg.position.set(0.16, 0.325, 0);
+            charGroup.add(leftLeg, rightLeg);
+
+            // جسم / قمیض
+            const torsoGeo = new THREE.BoxGeometry(0.62, 0.75, 0.32);
+            const torsoMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+            const torso = new THREE.Mesh(torsoGeo, torsoMat);
+            torso.position.set(0, 1.02, 0);
+            charGroup.add(torso);
+
+            // سر
+            const headGeo = new THREE.BoxGeometry(0.45, 0.45, 0.45);
+            const skinMat = new THREE.MeshLambertMaterial({ color: 0xf1c27d });
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.position.set(0, 1.65, 0);
+            charGroup.add(head);
+
+            // بال
+            const hairGeo = new THREE.BoxGeometry(0.47, 0.16, 0.47);
+            const hairMat = new THREE.MeshLambertMaterial({ color: 0x1c1c1c });
+            const hair = new THREE.Mesh(hairGeo, hairMat);
+            hair.position.set(0, 1.9, 0);
+            charGroup.add(hair);
+
+            // نام کا لیبل
+            const labelMat = new THREE.SpriteMaterial({
+                map: createTextTexture(name, 'rgba(0,0,0,0.7)', '#ffffff')
+            });
+            const label = new THREE.Sprite(labelMat);
+            label.position.set(0, 2.35, 0);
+            label.scale.set(1.6, 0.4, 1);
+            charGroup.add(label);
+
+            charGroup.scale.set(scale, scale, scale);
+            return charGroup;
+        }
+
+        // Usama اور Musa کے کردار
+        const usamaChar = createCharacter('Usama', 0x2980b9, 0x2c3e50, 0.92);
+        const musaChar = createCharacter('Musa', 0xf39c12, 0x34495e, 0.85);
+        scene.add(usamaChar, musaChar);
+
+        // 4. کھلاڑی کی گاڑی (Player Car)
+        const carGroup = new THREE.Group();
+
+        const bodyGeo = new THREE.BoxGeometry(2.1, 0.8, 4.2);
+        const bodyMat = new THREE.MeshLambertMaterial({ color: 0xe74c3c });
+        const carBody = new THREE.Mesh(bodyGeo, bodyMat);
+        carBody.position.y = 0.6;
+        carGroup.add(carBody);
+
+        const sideGeo = new THREE.BoxGeometry(0.15, 0.5, 2.1);
+        const sideMat = new THREE.MeshLambertMaterial({ color: 0xc0392b });
+        const leftSide = new THREE.Mesh(sideGeo, sideMat);
+        leftSide.position.set(-0.95, 1.2, -0.2);
+        const rightSide = new THREE.Mesh(sideGeo, sideMat);
+        rightSide.position.set(0.95, 1.2, -0.2);
+        const backSide = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.5, 0.15), sideMat);
+        backSide.position.set(0, 1.2, -1.2);
+        carGroup.add(leftSide, rightSide, backSide);
+
+        const carLabelMat = new THREE.SpriteMaterial({
+            map: createTextTexture('UM Drift', 'rgba(0,0,0,0.65)', '#f1c40f')
+        });
+        const carLabel = new THREE.Sprite(carLabelMat);
+        carLabel.position.set(0, 2.7, 0);
+        carLabel.scale.set(4, 1, 1);
+        carGroup.add(carLabel);
+
+        scene.add(carGroup);
+
+        // شہر میں بڑا سائن بورڈ (Billboard)
+        const billboardGeo = new THREE.BoxGeometry(18, 6, 1);
+        const billboardTex = createTextTexture('UM DRIFT CITY', '#1a252f', '#f1c40f');
+        const billboardMat = new THREE.MeshLambertMaterial({ map: billboardTex });
+        const billboard = new THREE.Mesh(billboardGeo, billboardMat);
+        billboard.position.set(0, 8, -35);
+        scene.add(billboard);
+
+        // 5. شہر کی عمارتیں (Buildings)
+        const buildings = [];
+        const bColors = [0x95a5a6, 0x7f8c8d, 0xbdc3c7, 0x34495e, 0xd35400];
+        for (let i = 0; i < 60; i++) {
+            let bx = (Math.random() - 0.5) * 350;
+            let bz = (Math.random() - 0.5) * 350;
+            if (Math.abs(bx) < 20 && Math.abs(bz) < 45) continue;
+
+            let bh = Math.random() * 20 + 8;
+            let bGeo = new THREE.BoxGeometry(10, bh, 10);
+            let bMat = new THREE.MeshLambertMaterial({ color: bColors[Math.floor(Math.random() * bColors.length)] });
+            let building = new THREE.Mesh(bGeo, bMat);
+            building.position.set(bx, bh / 2, bz);
+            scene.add(building);
+            buildings.push(building);
+        }
+
+        // 6. سکے (Collectible Coins)
+        const coins = [];
+        const coinGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 16);
+        const coinMat = new THREE.MeshLambertMaterial({ color: 0xf1c40f });
+
+        function spawnCoin() {
+            const coin = new THREE.Mesh(coinGeo, coinMat);
+            coin.rotation.x = Math.PI / 2;
+            coin.position.set((Math.random() - 0.5) * 200, 1, (Math.random() - 0.5) * 200);
+            scene.add(coin);
+            coins.push(coin);
+        }
+        for (let i = 0; i < 20; i++) spawnCoin();
+
+        // 7. کنٹرولز، موڈ اور فزکس (Controls, Mode & Physics)
+        let inCar = true;
+        let speed = 0;
+        const maxSpeed = 0.85;
+        const walkSpeed = 0.22;
+        const accel = 0.022;
+        const friction = 0.96;
+        let angle = 0;
+        let score = 0;
+        let walkCycle = 0;
+
+        let playerPos = new THREE.Vector3(0, 0, 0);
+
+        const keys = { left: false, right: false, gas: false, brake: false };
+
+        const modeBtn = document.getElementById('mode-btn');
+        modeBtn.addEventListener('click', () => {
+            if (inCar) {
+                inCar = false;
+                speed = 0;
+                const exitOffset = new THREE.Vector3(3, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                playerPos.copy(carGroup.position).add(exitOffset);
+                modeBtn.innerText = 'گاڑی میں بیٹھیں (Enter Car)';
+            } else {
+                if (playerPos.distanceTo(carGroup.position) < 8) {
+                    inCar = true;
+                    modeBtn.innerText = 'پیدل چلیں (Exit Car)';
+                } else {
+                    alert('گاڑی کے قریب جائیں تاکہ Usama اور Musa گاڑی میں بیٹھ سکیں!');
+                }
+            }
+        });
+
+        function bindTouch(id, key) {
+            const el = document.getElementById(id);
+            el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+            el.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+            el.addEventListener('mousedown', () => keys[key] = true);
+            el.addEventListener('mouseup', () => keys[key] = false);
+        }
+        bindTouch('btn-left', 'left');
+        bindTouch('btn-right', 'right');
+        bindTouch('btn-gas', 'gas');
+        bindTouch('btn-brake', 'brake');
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = true;
+            if (e.key === 'ArrowRight') keys.right = true;
+            if (e.key === 'ArrowUp') keys.gas = true;
+            if (e.key === 'ArrowDown') keys.brake = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') keys.left = false;
+            if (e.key === 'ArrowRight') keys.right = false;
+            if (e.key === 'ArrowUp') keys.gas = false;
+            if (e.key === 'ArrowDown') keys.brake = false;
+        });
+
+        // 8. گیم لوپ (Animation Loop)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            let activeTarget;
+
+            if (inCar) {
+                if (keys.gas) speed += accel;
+                if (keys.brake) speed -= accel;
+                speed = Math.max(-maxSpeed / 2, Math.min(maxSpeed, speed));
+                speed *= friction;
+
+                if (Math.abs(speed) > 0.01) {
+                    const dir = speed > 0 ? 1 : -1;
+                    if (keys.left) angle += 0.045 * dir;
+                    if (keys.right) angle -= 0.045 * dir;
+                }
+
+                carGroup.rotation.y = angle;
+                carGroup.position.x -= Math.sin(angle) * speed;
+                carGroup.position.z -= Math.cos(angle) * speed;
+
+                for (let b of buildings) {
+                    if (Math.abs(carGroup.position.x - b.position.x) < 6 &&
+                        Math.abs(carGroup.position.z - b.position.z) < 6) {
+                        speed = -speed * 0.8;
+                    }
+                }
+
+                const usamaSeat = new THREE.Vector3(-0.45, 0.55, 0.2).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                const musaSeat = new THREE.Vector3(0.45, 0.55, -0.3).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+
+                usamaChar.position.copy(carGroup.position).add(usamaSeat);
+                musaChar.position.copy(carGroup.position).add(musaSeat);
+                usamaChar.rotation.y = angle + Math.PI;
+                musaChar.rotation.y = angle + Math.PI;
+
+                activeTarget = carGroup.position;
+            } else {
+                let moveSpeed = 0;
+                if (keys.gas) moveSpeed = walkSpeed;
+                if (keys.brake) moveSpeed = -walkSpeed * 0.7;
+
+                if (keys.left) angle += 0.045;
+                if (keys.right) angle -= 0.045;
+
+                const nextX = playerPos.x - Math.sin(angle) * moveSpeed;
+                const nextZ = playerPos.z - Math.cos(angle) * moveSpeed;
+
+                let hitBuilding = false;
+                for (let b of buildings) {
+                    if (Math.abs(nextX - b.position.x) < 5.6 && Math.abs(nextZ - b.position.z) < 5.6) {
+                        hitBuilding = true;
+                        break;
+                    }
+                }
+                if (!hitBuilding) {
+                    playerPos.x = nextX;
+                    playerPos.z = nextZ;
+                }
+
+                if (Math.abs(moveSpeed) > 0.01) {
+                    walkCycle += 0.25;
+                } else {
+                    walkCycle = 0;
+                }
+
+                const bob = Math.abs(Math.sin(walkCycle)) * 0.12;
+                const musaOffset = new THREE.Vector3(1.1, 0, -0.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+
+                usamaChar.position.set(playerPos.x, bob, playerPos.z);
+                usamaChar.rotation.y = angle + Math.PI;
+
+                musaChar.position.set(playerPos.x + musaOffset.x, bob * 0.9, playerPos.z + musaOffset.z);
+                musaChar.rotation.y = angle + Math.PI;
+
+                activeTarget = playerPos;
+            }
+
+            for (let i = coins.length - 1; i >= 0; i--) {
+                coins[i].rotation.z += 0.05;
+                if (activeTarget.distanceTo(coins[i].position) < 2.5) {
+                    scene.remove(coins[i]);
+                    coins.splice(i, 1);
+                    score += 10;
+                    document.getElementById('score').innerText = score;
+                    spawnCoin();
+                }
+            }
+
+            const camDist = inCar ? 12 : 8;
+            const camHeight = inCar ? 6 : 4.5;
+            const camOffset = new THREE.Vector3(0, camHeight, camDist);
+            camOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+            camera.position.lerp(activeTarget.clone().add(camOffset), 0.1);
+            camera.lookAt(activeTarget.x, activeTarget.y + 1.2, activeTarget.z);
+
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>

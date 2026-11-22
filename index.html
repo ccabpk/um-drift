@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UM Drift - Pro 3D</title>
+    <title>UM Drift - Open World 3D</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             overflow: hidden;
-            background: #1e293b;
+            background: #0f172a;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
             user-select: none;
         }
+        /* ٹاپ HUD */
         #hud-top {
             position: absolute;
-            top: 12px;
-            left: 12px;
-            right: 12px;
+            top: 10px;
+            left: 10px;
+            right: 10px;
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
@@ -25,81 +26,80 @@
             pointer-events: none;
         }
         .hud-panel {
-            background: rgba(15, 23, 42, 0.82);
+            background: rgba(15, 23, 42, 0.84);
             border: 1px solid rgba(255, 255, 255, 0.22);
-            border-radius: 14px;
-            padding: 10px 14px;
+            border-radius: 12px;
+            padding: 8px 12px;
             color: #fff;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.45);
         }
         #title-badge {
-            font-size: 18px;
-            font-weight: 800;
+            font-size: 16px;
+            font-weight: 900;
             color: #facc15;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
         }
         #stats-row {
             display: flex;
-            gap: 14px;
-            margin-top: 4px;
-            font-size: 13px;
+            gap: 12px;
+            margin-top: 3px;
+            font-size: 12px;
             color: #e2e8f0;
         }
         .stat-val { color: #38bdf8; font-weight: bold; }
-        #wanted-stars { color: #ef4444; letter-spacing: 2px; font-size: 14px; }
+        #active-char-badge {
+            font-size: 13px;
+            font-weight: 800;
+            color: #4ade80;
+        }
+        #vehicle-status {
+            font-size: 11px;
+            color: #facc15;
+            margin-top: 2px;
+        }
 
+        /* منی میپ */
         #minimap-wrap {
             position: absolute;
-            bottom: 112px;
-            left: 15px;
-            width: 112px;
-            height: 112px;
+            bottom: 108px;
+            left: 12px;
+            width: 106px;
+            height: 106px;
             border-radius: 50%;
             overflow: hidden;
-            border: 3px solid rgba(255, 255, 255, 0.7);
-            background: rgba(15, 23, 42, 0.88);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            border: 2.5px solid rgba(255, 255, 255, 0.75);
+            background: rgba(15, 23, 42, 0.9);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.6);
             z-index: 20;
             pointer-events: none;
         }
         #minimap { width: 100%; height: 100%; display: block; }
 
+        /* سپیڈومیٹر */
         #speedo {
             position: absolute;
-            bottom: 112px;
-            right: 15px;
+            bottom: 108px;
+            right: 12px;
             background: rgba(15, 23, 42, 0.85);
-            border: 2px solid #38bdf8;
-            border-radius: 14px;
-            padding: 8px 14px;
+            border: 1.5px solid #38bdf8;
+            border-radius: 12px;
+            padding: 6px 12px;
             color: #fff;
             text-align: center;
             z-index: 20;
             pointer-events: none;
         }
-        #speed-num { font-size: 24px; font-weight: 900; color: #38bdf8; line-height: 1; }
-        #speed-unit { font-size: 10px; color: #94a3b8; }
-        #nitro-bar-bg {
-            width: 70px;
-            height: 6px;
-            background: #1e293b;
-            border-radius: 3px;
-            margin-top: 6px;
-            overflow: hidden;
-        }
-        #nitro-bar {
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, #f97316, #facc15);
-        }
+        #speed-num { font-size: 20px; font-weight: 900; color: #38bdf8; line-height: 1; }
+        #speed-unit { font-size: 9px; color: #94a3b8; }
 
+        /* اوپر دائیں جانب ایکشن مینو */
         #action-bar {
             position: absolute;
-            top: 84px;
-            right: 12px;
+            top: 74px;
+            right: 10px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             z-index: 25;
         }
         .action-btn {
@@ -107,64 +107,89 @@
             color: #fff;
             border: 1.5px solid rgba(255,255,255,0.45);
             border-radius: 10px;
-            padding: 8px 12px;
-            font-size: 12px;
+            padding: 7px 11px;
+            font-size: 11px;
             font-weight: bold;
             cursor: pointer;
+            text-align: right;
         }
         .action-btn:active { transform: scale(0.94); }
-        #btn-mode { border-color: #38bdf8; color: #38bdf8; }
+        #btn-enter { border-color: #38bdf8; color: #38bdf8; }
+        #btn-switch { border-color: #4ade80; color: #4ade80; }
         #btn-cam { border-color: #facc15; color: #facc15; }
-        #btn-sound { border-color: #4ade80; color: #4ade80; }
 
+        /* پیدل ایکشن بٹنز (فائر، آگ بجھانا، دوڑنا) */
+        #foot-actions {
+            position: absolute;
+            bottom: 108px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 10px;
+            z-index: 26;
+        }
+        .foot-btn {
+            padding: 10px 13px;
+            border-radius: 12px;
+            border: 2px solid #fff;
+            color: #fff;
+            font-size: 13px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        #btn-shoot { background: rgba(220, 38, 38, 0.85); border-color: #fca5a5; }
+        #btn-water { background: rgba(2, 132, 199, 0.85); border-color: #7dd3fc; }
+        #btn-sprint { background: rgba(217, 119, 6, 0.85); border-color: #fcd34d; }
+
+        /* نیچے کنٹرول بٹن */
         .controls {
             position: absolute;
-            bottom: 18px;
+            bottom: 14px;
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 16px;
+            padding: 0 14px;
             z-index: 25;
         }
         .btn-group { display: flex; gap: 10px; align-items: center; }
         .ctrl-btn {
-            width: 62px;
-            height: 62px;
-            background: rgba(255, 255, 255, 0.25);
+            width: 58px;
+            height: 58px;
+            background: rgba(255, 255, 255, 0.24);
             border: 2px solid rgba(255, 255, 255, 0.75);
             border-radius: 50%;
             color: #fff;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
         }
         .ctrl-btn:active, .ctrl-btn.active {
-            background: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.75);
             color: #000;
             transform: scale(0.92);
         }
         #btn-gas {
-            width: 70px;
-            height: 70px;
-            background: rgba(34, 197, 94, 0.5);
+            width: 66px;
+            height: 66px;
+            background: rgba(34, 197, 94, 0.52);
             border-color: #4ade80;
         }
         #btn-brake {
-            width: 56px;
-            height: 56px;
-            background: rgba(239, 68, 68, 0.5);
+            width: 54px;
+            height: 54px;
+            background: rgba(239, 68, 68, 0.52);
             border-color: #f87171;
         }
         #btn-nitro {
-            width: 52px;
-            height: 52px;
-            background: rgba(249, 115, 22, 0.6);
+            width: 50px;
+            height: 50px;
+            background: rgba(249, 115, 22, 0.62);
             border-color: #fb923c;
-            font-size: 18px;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -172,32 +197,38 @@
 
     <div id="hud-top">
         <div class="hud-panel">
-            <div id="title-badge">UM DRIFT PRO</div>
+            <div id="title-badge">UM DRIFT 3D</div>
             <div id="stats-row">
                 <div>سکور: <span class="stat-val" id="score">0</span></div>
-                <div>ڈرفٹ: <span class="stat-val" id="drift-score">0</span></div>
+                <div>آگ بجھائی: <span class="stat-val" id="fires-put">0</span></div>
             </div>
         </div>
         <div class="hud-panel" style="text-align: right;">
-            <div style="font-size: 13px; font-weight: bold; color: #f8fafc;">Usama & Musa</div>
-            <div id="wanted-stars">★ ☆ ☆</div>
+            <div id="active-char-badge">کردار: Usama</div>
+            <div id="vehicle-status">🚗 اسپورٹس کار میں</div>
         </div>
     </div>
 
     <div id="action-bar">
-        <button class="action-btn" id="btn-mode">🚶 پیدل چلیں</button>
+        <button class="action-btn" id="btn-enter">🚶 باہر نکلیں (Exit)</button>
+        <button class="action-btn" id="btn-switch">🔄 کردار بدلیں (Musa)</button>
         <button class="action-btn" id="btn-cam">🎥 کیمرہ بدلیں</button>
-        <button class="action-btn" id="btn-sound">🔊 آواز: آن</button>
+    </div>
+
+    <!-- پیدل چلنے کے دوران ہتھیار اور ایکشن بٹنز -->
+    <div id="foot-actions">
+        <button class="foot-btn" id="btn-shoot">🔫 فائر</button>
+        <button class="foot-btn" id="btn-water">🧯 پانی</button>
+        <button class="foot-btn" id="btn-sprint">🏃 دوڑیں</button>
     </div>
 
     <div id="minimap-wrap">
-        <canvas id="minimap" width="120" height="120"></canvas>
+        <canvas id="minimap" width="110" height="110"></canvas>
     </div>
 
     <div id="speedo">
         <div id="speed-num">0</div>
         <div id="speed-unit">KM/H</div>
-        <div id="nitro-bar-bg"><div id="nitro-bar"></div></div>
     </div>
 
     <div class="controls">
@@ -217,129 +248,109 @@
     <script>
         // ================= 1. ساؤنڈ انجن =================
         let audioCtx = null;
-        let soundEnabled = true;
-        let engineOsc = null;
-        let engineGain = null;
-
         function initAudio() {
             try {
                 if (!audioCtx) {
                     const Ctx = window.AudioContext || window.webkitAudioContext;
                     audioCtx = new Ctx();
-                    engineOsc = audioCtx.createOscillator();
-                    engineGain = audioCtx.createGain();
-                    engineOsc.type = 'sawtooth';
-                    engineOsc.frequency.value = 55;
-                    engineGain.gain.value = 0.025;
-                    engineOsc.connect(engineGain);
-                    engineGain.connect(audioCtx.destination);
-                    engineOsc.start();
                 }
                 if (audioCtx.state === 'suspended') audioCtx.resume();
             } catch (e) {}
         }
 
-        function playTone(freqStart, freqEnd, duration, type = 'sine', vol = 0.14) {
-            if (!soundEnabled || !audioCtx) return;
+        function playSound(freq1, freq2, dur, type = 'sine', vol = 0.15) {
+            if (!audioCtx) return;
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = type;
-                osc.frequency.setValueAtTime(freqStart, audioCtx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(freqEnd, audioCtx.currentTime + duration);
+                osc.frequency.setValueAtTime(freq1, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(freq2, audioCtx.currentTime + dur);
                 gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
                 osc.connect(gain);
                 gain.connect(audioCtx.destination);
                 osc.start();
-                osc.stop(audioCtx.currentTime + duration);
+                osc.stop(audioCtx.currentTime + dur);
             } catch (e) {}
         }
 
-        document.getElementById('btn-sound').addEventListener('click', () => {
-            initAudio();
-            soundEnabled = !soundEnabled;
-            document.getElementById('btn-sound').innerText = soundEnabled ? '🔊 آواز: آن' : '🔇 آواز: آف';
-            if (engineGain) engineGain.gain.value = soundEnabled ? 0.025 : 0;
-        });
-
-        // ================= 2. سین اور لائٹنگ =================
+        // ================= 2. سین اور کیمرہ =================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1e293b);
-        scene.fog = new THREE.Fog(0x1e293b, 45, 220);
+        scene.background = new THREE.Color(0x38bdf8); // روشن دن کا آسمان
+        scene.fog = new THREE.Fog(0x7dd3fc, 70, 280);
 
-        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.2, 500);
+        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.2, 550);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
-        scene.add(ambientLight);
-        const dirLight = new THREE.DirectionalLight(0xfffbeb, 0.9);
-        dirLight.position.set(60, 120, 50);
-        scene.add(dirLight);
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.85);
+        scene.add(hemiLight);
+        const sunLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
+        sunLight.position.set(80, 150, 60);
+        scene.add(sunLight);
 
-        // ================= 3. شہر، سڑکیں اور عمارتیں =================
-        const CITY_SIZE = 600;
-        const BLOCK_STEP = 60;
+        // ================= 3. شہر اور سڑکیں =================
+        const CITY_SIZE = 640;
+        const BLOCK_STEP = 64;
 
         const ground = new THREE.Mesh(
             new THREE.PlaneGeometry(CITY_SIZE, CITY_SIZE),
-            new THREE.MeshLambertMaterial({ color: 0x1f2937 })
+            new THREE.MeshLambertMaterial({ color: 0x27272a })
         );
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        const roadLineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-        const sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
+        const sidewalkMat = new THREE.MeshLambertMaterial({ color: 0x64748b });
 
-        for (let x = -240; x <= 240; x += BLOCK_STEP) {
-            const line = new THREE.Mesh(new THREE.PlaneGeometry(0.45, CITY_SIZE), roadLineMat);
+        for (let x = -256; x <= 256; x += BLOCK_STEP) {
+            const line = new THREE.Mesh(new THREE.PlaneGeometry(0.45, CITY_SIZE), lineMat);
             line.rotation.x = -Math.PI / 2;
             line.position.set(x, 0.03, 0);
             scene.add(line);
         }
-        for (let z = -240; z <= 240; z += BLOCK_STEP) {
-            const line = new THREE.Mesh(new THREE.PlaneGeometry(CITY_SIZE, 0.45), roadLineMat);
+        for (let z = -256; z <= 256; z += BLOCK_STEP) {
+            const line = new THREE.Mesh(new THREE.PlaneGeometry(CITY_SIZE, 0.45), lineMat);
             line.rotation.x = -Math.PI / 2;
             line.position.set(0, 0.03, z);
             scene.add(line);
         }
 
         function createBuildingTexture(baseColor) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128;
-            canvas.height = 256;
-            const ctx = canvas.getContext('2d');
+            const c = document.createElement('canvas');
+            c.width = 128; c.height = 256;
+            const ctx = c.getContext('2d');
             ctx.fillStyle = baseColor;
             ctx.fillRect(0, 0, 128, 256);
-            for (let y = 12; y < 245; y += 22) {
-                for (let x = 12; x < 115; x += 26) {
-                    ctx.fillStyle = Math.random() > 0.35 ? '#fef08a' : '#0f172a';
+            for (let y = 14; y < 245; y += 22) {
+                for (let x = 14; x < 114; x += 26) {
+                    ctx.fillStyle = Math.random() > 0.3 ? '#bae6fd' : '#0f172a';
                     ctx.fillRect(x, y, 16, 12);
                 }
             }
-            return new THREE.CanvasTexture(canvas);
+            return new THREE.CanvasTexture(c);
         }
 
-        const buildingTextures = ['#334155', '#1e3a8a', '#312e81', '#3f3f46', '#1e293b'].map(createBuildingTexture);
+        const bTextures = ['#334155', '#1e40af', '#475569', '#3f3f46', '#0f766e'].map(createBuildingTexture);
         const buildings = [];
 
-        for (let bx = -210; bx <= 210; bx += BLOCK_STEP) {
-            for (let bz = -210; bz <= 210; bz += BLOCK_STEP) {
-                if (Math.abs(bx) < 40 && Math.abs(bz) < 40) continue;
+        for (let bx = -224; bx <= 224; bx += BLOCK_STEP) {
+            for (let bz = -224; bz <= 224; bz += BLOCK_STEP) {
+                if (Math.abs(bx) < 45 && Math.abs(bz) < 45) continue;
 
-                const pad = new THREE.Mesh(new THREE.BoxGeometry(42, 0.35, 42), sidewalkMat);
+                const pad = new THREE.Mesh(new THREE.BoxGeometry(44, 0.35, 44), sidewalkMat);
                 pad.position.set(bx, 0.17, bz);
                 scene.add(pad);
 
                 const w = 24 + Math.random() * 10;
                 const d = 24 + Math.random() * 10;
-                const h = 18 + Math.random() * 44;
+                const h = 18 + Math.random() * 45;
                 const bMesh = new THREE.Mesh(
                     new THREE.BoxGeometry(w, h, d),
-                    new THREE.MeshLambertMaterial({ map: buildingTextures[Math.floor(Math.random() * buildingTextures.length)] })
+                    new THREE.MeshLambertMaterial({ map: bTextures[Math.floor(Math.random() * bTextures.length)] })
                 );
                 bMesh.position.set(bx, h / 2 + 0.35, bz);
                 scene.add(bMesh);
@@ -347,475 +358,805 @@
             }
         }
 
-        function createTextTexture(text, bgColor, textColor, fontSize = 44) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 512;
-            canvas.height = 128;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, 512, 128);
-            ctx.strokeStyle = textColor;
-            ctx.lineWidth = 6;
-            ctx.strokeRect(4, 4, 504, 120);
-            ctx.font = `900 ${fontSize}px sans-serif`;
-            ctx.fillStyle = textColor;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(text, 256, 64);
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        // UM DRIFT گیٹ / بل بورڈ
-        const signBoard = new THREE.Mesh(
-            new THREE.BoxGeometry(22, 4.2, 1.0),
-            new THREE.MeshBasicMaterial({ map: createTextTexture('UM DRIFT • USAMA & MUSA', '#0f172a', '#facc15', 32) })
+        // ہیلی پیڈ (Helipad) سینٹرل پلازہ میں
+        const helipad = new THREE.Mesh(
+            new THREE.CylinderGeometry(8, 8, 0.2, 24),
+            new THREE.MeshLambertMaterial({ color: 0x334155 })
         );
-        signBoard.position.set(0, 9.5, -30);
-        const pLeft = new THREE.Mesh(new THREE.BoxGeometry(1.4, 10, 1.4), new THREE.MeshLambertMaterial({ color: 0x64748b }));
-        pLeft.position.set(-10.5, 5, -30);
-        const pRight = pLeft.clone();
-        pRight.position.set(10.5, 5, -30);
-        scene.add(signBoard, pLeft, pRight);
+        helipad.position.set(-18, 0.1, -12);
+        const hRing = new THREE.Mesh(
+            new THREE.RingGeometry(6.2, 7.2, 24),
+            new THREE.MeshBasicMaterial({ color: 0xfacc15, side: THREE.DoubleSide })
+        );
+        hRing.rotation.x = -Math.PI / 2;
+        hRing.position.set(-18, 0.22, -12);
+        scene.add(helipad, hRing);
 
-        // ================= 4. گاڑی بنانے والا فنکشن (اسپورٹس، پولیس اور ٹریفک) =================
-        function buildCarMesh(bodyColor, cabinColor, isSports = false) {
-            const grp = new THREE.Group();
+        // ================= 4. اصل شیپ والی پروفیشنل گاڑیاں =================
+        function createRealisticCar(primaryColor, accentColor, type = 'sports') {
+            const car = new THREE.Group();
+            const bodyMat = new THREE.MeshLambertMaterial({ color: primaryColor });
+            const darkMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
+            const glassMat = new THREE.MeshLambertMaterial({ color: 0x0284c7 });
+            const chromeMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
 
-            const body = new THREE.Mesh(
-                new THREE.BoxGeometry(2.2, 0.75, 4.5),
-                new THREE.MeshLambertMaterial({ color: bodyColor })
-            );
-            body.position.y = 0.62;
-            grp.add(body);
+            if (type === 'firetruck') {
+                // فائر بریگیڈ ٹرک
+                const cab = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 2.2), bodyMat);
+                cab.position.set(0, 1.35, -1.8);
+                const tank = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.65, 3.8), bodyMat);
+                tank.position.set(0, 1.28, 1.2);
+                const ladder = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.25, 4.2), chromeMat);
+                ladder.position.set(0, 2.22, 1.0);
+                const cabGlass = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.75, 0.12), glassMat);
+                cabGlass.position.set(0, 1.65, -2.91);
+                car.add(cab, tank, ladder, cabGlass);
+            } else {
+                // ایرو ڈائنامک اسپورٹس / سیڈان باڈی
+                const lowerChassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 4.7), bodyMat);
+                lowerChassis.position.set(0, 0.58, 0);
 
-            const cabin = new THREE.Mesh(
-                new THREE.BoxGeometry(1.75, 0.55, 2.0),
-                new THREE.MeshLambertMaterial({ color: cabinColor })
-            );
-            cabin.position.set(0, 1.25, -0.1);
-            grp.add(cabin);
+                // ڈھلوان بونٹ (Sloped Hood)
+                const hood = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.26, 1.65), bodyMat);
+                hood.position.set(0, 0.88, -1.45);
+                hood.rotation.x = 0.14;
 
-            if (isSports) {
-                const wing = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.14, 0.45), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
-                wing.position.set(0, 1.32, 2.0);
-                grp.add(wing);
+                // ڈگی (Rear Trunk)
+                const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.28, 1.15), bodyMat);
+                trunk.position.set(0, 0.9, 1.68);
+                trunk.rotation.x = -0.08;
+
+                // کیبن چھت
+                const roof = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.52, 1.75), bodyMat);
+                roof.position.set(0, 1.25, 0.08);
+
+                // آگے اور پیچھے ترچھے شیشے (Windshields)
+                const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.52, 0.12), glassMat);
+                frontGlass.position.set(0, 1.16, -0.82);
+                frontGlass.rotation.x = -0.52;
+
+                const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.48, 0.12), glassMat);
+                rearGlass.position.set(0, 1.16, 0.98);
+                rearGlass.rotation.x = 0.52;
+
+                // سائیڈ کھڑکیاں
+                const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.4, 1.5), glassMat);
+                sideGlass.position.set(0, 1.23, 0.08);
+
+                // فرنٹ اور بیک بمپرز + گرل
+                const fBumper = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.32, 0.35), darkMat);
+                fBumper.position.set(0, 0.45, -2.32);
+                const rBumper = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.32, 0.35), darkMat);
+                rBumper.position.set(0, 0.45, 2.32);
+
+                // سائیڈ مررز
+                const mirrorL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.15, 0.18), bodyMat);
+                mirrorL.position.set(-1.18, 1.05, -0.65);
+                const mirrorR = mirrorL.clone();
+                mirrorR.position.set(1.18, 1.05, -0.65);
+
+                car.add(lowerChassis, hood, trunk, roof, frontGlass, rearGlass, sideGlass, fBumper, rBumper, mirrorL, mirrorR);
+
+                if (type === 'sports') {
+                    const wing = new THREE.Mesh(new THREE.BoxGeometry(2.15, 0.1, 0.38), darkMat);
+                    wing.position.set(0, 1.28, 2.15);
+                    const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.3, 0.2), darkMat);
+                    leg1.position.set(-0.75, 1.12, 2.15);
+                    const leg2 = leg1.clone();
+                    leg2.position.set(0.75, 1.12, 2.15);
+                    car.add(wing, leg1, leg2);
+                }
             }
 
-            // ہیڈ لائٹس اور ٹیل لائٹس
-            const hl = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-            hl.position.set(-0.72, 0.68, -2.26);
-            const hl2 = hl.clone();
-            hl2.position.set(0.72, 0.68, -2.26);
+            // ہیڈلائٹس اور ٹیل لائٹس
+            const hl1 = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+            hl1.position.set(-0.74, 0.72, -2.36);
+            const hl2 = hl1.clone();
+            hl2.position.set(0.74, 0.72, -2.36);
 
-            const tl = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.1), new THREE.MeshBasicMaterial({ color: 0xff1e1e }));
-            tl.position.set(-0.72, 0.72, 2.26);
-            const tl2 = tl.clone();
-            tl2.position.set(0.72, 0.72, 2.26);
-            grp.add(hl, hl2, tl, tl2);
+            const tl1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xff1e1e }));
+            tl1.position.set(-0.72, 0.76, 2.36);
+            const tl2 = tl1.clone();
+            tl2.position.set(0.72, 0.76, 2.36);
+            car.add(hl1, hl2, tl1, tl2);
 
-            // 4 پہیے
-            const wheelGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.34, 14);
-            wheelGeo.rotateZ(Math.PI / 2);
-            const wheelMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+            // وہیل آرچز اور الائے رمز والے پہیے
+            const tireGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 18);
+            tireGeo.rotateZ(Math.PI / 2);
+            const rimGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.37, 12);
+            rimGeo.rotateZ(Math.PI / 2);
+
             const wheels = [];
-            [[-1.12, 0.44, -1.35], [1.12, 0.44, -1.35], [-1.12, 0.44, 1.35], [1.12, 0.44, 1.35]].forEach(pos => {
-                const w = new THREE.Mesh(wheelGeo, wheelMat);
-                w.position.set(pos[0], pos[1], pos[2]);
-                grp.add(w);
-                wheels.push(w);
+            const zFront = type === 'firetruck' ? -2.0 : -1.45;
+            const zRear = type === 'firetruck' ? 1.8 : 1.45;
+            [[-1.12, 0.45, zFront], [1.12, 0.45, zFront], [-1.12, 0.45, zRear], [1.12, 0.45, zRear]].forEach(p => {
+                const wGrp = new THREE.Group();
+                const tire = new THREE.Mesh(tireGeo, darkMat);
+                const rim = new THREE.Mesh(rimGeo, chromeMat);
+                wGrp.add(tire, rim);
+                wGrp.position.set(p[0], p[1], p[2]);
+                car.add(wGrp);
+                wheels.push(wGrp);
             });
 
-            return { grp, wheels };
+            return { mesh: car, wheels };
         }
 
-        // کھلاڑی کی اسپورٹس کار
-        const playerCarObj = buildCarMesh(0xdc2626, 0x38bdf8, true);
-        const carGroup = playerCarObj.grp;
-        carGroup.position.set(0, 0, 8);
+        // 1. کھلاڑی کی اسپورٹس کار
+        const sportsCar = createRealisticCar(0xdc2626, 0x0f172a, 'sports');
+        sportsCar.mesh.position.set(0, 0, 10);
+        scene.add(sportsCar.mesh);
 
-        const nitroFlame = new THREE.Mesh(
-            new THREE.ConeGeometry(0.28, 1.3, 8).rotateX(Math.PI / 2),
-            new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
-        );
-        nitroFlame.position.set(0, 0.55, 2.85);
-        nitroFlame.visible = false;
-        carGroup.add(nitroFlame);
-        scene.add(carGroup);
+        // 2. پولیس کار
+        const policeCar = createRealisticCar(0x0f172a, 0xffffff, 'sedan');
+        const pDoor = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.5, 1.7), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+        pDoor.position.set(0, 0.6, 0.05);
+        const sirenR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.18, 0.25), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+        sirenR.position.set(-0.35, 1.58, 0.05);
+        const sirenB = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.18, 0.25), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
+        sirenB.position.set(0.35, 1.58, 0.05);
+        policeCar.mesh.add(pDoor, sirenR, sirenB);
+        policeCar.mesh.position.set(64, 0, -64);
+        scene.add(policeCar.mesh);
 
-        // پولیس کی گاڑی
-        const policeObj = buildCarMesh(0x0f172a, 0xf8fafc, false);
-        const policeCar = policeObj.grp;
-        const sirenRed = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.22, 0.3), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-        sirenRed.position.set(-0.35, 1.62, -0.1);
-        const sirenBlue = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.22, 0.3), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
-        sirenBlue.position.set(0.35, 1.62, -0.1);
-        policeCar.add(sirenRed, sirenBlue);
-        policeCar.position.set(60, 0, -60);
-        scene.add(policeCar);
+        // 3. فائر بریگیڈ ٹرک
+        const fireTruck = createRealisticCar(0xb91c1c, 0xffffff, 'firetruck');
+        fireTruck.mesh.position.set(22, 0, -15);
+        scene.add(fireTruck.mesh);
 
-        // شہر کی ٹریفک گاڑیاں
+        // 4. ٹریفک گاڑیاں
         const trafficCars = [];
-        const trafficColors = [0x16a34a, 0xeab308, 0x9333ea, 0x0284c7, 0xf97316, 0xe2e8f0];
+        const tColors = [0x16a34a, 0xeab308, 0x7c3aed, 0x0284c7, 0xf97316, 0xe2e8f0];
         for (let i = 0; i < 8; i++) {
-            const tCar = buildCarMesh(trafficColors[i % trafficColors.length], 0x1e293b, false);
-            const roadX = ((i % 5) - 2) * BLOCK_STEP + 5;
-            const startZ = -180 + i * 50;
-            tCar.grp.position.set(roadX, 0, startZ);
-            scene.add(tCar.grp);
-            trafficCars.push({ mesh: tCar.grp, wheels: tCar.wheels, roadX, speed: 0.28 + (i % 3) * 0.08 });
+            const tc = createRealisticCar(tColors[i % tColors.length], 0x1e293b, 'sedan');
+            const rx = ((i % 5) - 2) * BLOCK_STEP + 6;
+            const rz = -190 + i * 52;
+            tc.mesh.position.set(rx, 0, rz);
+            scene.add(tc.mesh);
+            trafficCars.push({ mesh: tc.mesh, wheels: tc.wheels, speed: 0.26 + (i % 3) * 0.07 });
         }
 
-        // ================= 5. Usama اور Musa کے کردار =================
-        function buildCharacter(name, shirtColor, pantsColor, scale) {
-            const group = new THREE.Group();
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.72, 0.32), new THREE.MeshLambertMaterial({ color: shirtColor }));
+        // ================= 5. اڑنے والا ہیلی کاپٹر (Helicopter) =================
+        function createHelicopter() {
+            const heli = new THREE.Group();
+            const bodyMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+            const stripeMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
+            const glassMat = new THREE.MeshLambertMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75 });
+            const metalMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+
+            // مرکزی باڈی اور کاک پٹ
+            const fuselage = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.65, 3.8), bodyMat);
+            fuselage.position.set(0, 1.45, 0.2);
+
+            const cockpit = new THREE.Mesh(new THREE.SphereGeometry(1.15, 14, 12), glassMat);
+            cockpit.scale.set(0.95, 0.75, 1.25);
+            cockpit.position.set(0, 1.4, -1.65);
+
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.28, 3.85), stripeMat);
+            stripe.position.set(0, 1.35, 0.2);
+
+            // پچھلی دم (Tail Boom)
+            const tail = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 4.2), bodyMat);
+            tail.position.set(0, 1.75, 3.9);
+
+            const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.3, 0.7), stripeMat);
+            tailFin.position.set(0, 2.2, 5.7);
+
+            // لینڈنگ اسکیڈز (Skids)
+            const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.4).rotateX(Math.PI / 2), metalMat);
+            skidL.position.set(-1.1, 0.2, -0.1);
+            const skidR = skidL.clone();
+            skidR.position.set(1.1, 0.2, -0.1);
+
+            const strut1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.65, 0.1), metalMat);
+            strut1.position.set(-1.1, 0.5, -1.0);
+            const strut2 = strut1.clone(); strut2.position.set(1.1, 0.5, -1.0);
+            const strut3 = strut1.clone(); strut3.position.set(-1.1, 0.5, 1.0);
+            const strut4 = strut1.clone(); strut4.position.set(1.1, 0.5, 1.0);
+
+            // مین روٹر پنکھے (Main Rotor)
+            const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.6), metalMat);
+            mast.position.set(0, 2.5, 0.1);
+
+            const mainRotor = new THREE.Group();
+            mainRotor.position.set(0, 2.8, 0.1);
+            const blade1 = new THREE.Mesh(new THREE.BoxGeometry(8.5, 0.06, 0.35), metalMat);
+            const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 8.5), metalMat);
+            mainRotor.add(blade1, blade2);
+
+            // ٹیل روٹر (Tail Rotor)
+            const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.22), stripeMat);
+            tailRotor.position.set(0.32, 2.1, 5.7);
+
+            heli.add(fuselage, cockpit, stripe, tail, tailFin, skidL, skidR, strut1, strut2, strut3, strut4, mast, mainRotor, tailRotor);
+            return { mesh: heli, mainRotor, tailRotor };
+        }
+
+        const helicopter = createHelicopter();
+        helicopter.mesh.position.set(-18, 0.2, -12);
+        scene.add(helicopter.mesh);
+
+        // تمام گاڑیوں کی فہرست (تاکہ ٹکراؤ اور بیٹھنے کا نظام کام کرے)
+        const vehicles = [
+            { id: 'car', name: 'اسپورٹس کار', mesh: sportsCar.mesh, wheels: sportsCar.wheels, speed: 0, heading: 0, radius: 2.6, type: 'ground' },
+            { id: 'heli', name: 'ہیلی کاپٹر 🚁', mesh: helicopter.mesh, wheels: [], speed: 0, heading: 0, vy: 0, radius: 3.4, type: 'air' },
+            { id: 'fire', name: 'فائر ٹرک 🚒', mesh: fireTruck.mesh, wheels: fireTruck.wheels, speed: 0, heading: 0, radius: 3.0, type: 'ground' }
+        ];
+
+        // ================= 6. الگ الگ کردار: Usama اور Musa =================
+        function createTextLabel(text, bg, fg) {
+            const c = document.createElement('canvas');
+            c.width = 256; c.height = 64;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, 256, 64);
+            ctx.font = 'bold 30px sans-serif';
+            ctx.fillStyle = fg;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 128, 32);
+            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c) }));
+            sp.scale.set(1.6, 0.4, 1);
+            return sp;
+        }
+
+        function createCharacter(name, shirtColor, pantsColor, scale) {
+            const grp = new THREE.Group();
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.72, 0.3), new THREE.MeshLambertMaterial({ color: shirtColor }));
             torso.position.y = 1.0;
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.44, 0.44), new THREE.MeshLambertMaterial({ color: 0xf1c27d }));
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.42), new THREE.MeshLambertMaterial({ color: 0xf1c27d }));
             head.position.y = 1.62;
-            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.16, 0.46), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
-            hair.position.y = 1.86;
+            const hair = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.15, 0.44), new THREE.MeshLambertMaterial({ color: 0x0f172a }));
+            hair.position.y = 1.85;
 
             const legGeo = new THREE.BoxGeometry(0.2, 0.62, 0.22);
             const legMat = new THREE.MeshLambertMaterial({ color: pantsColor });
-            const leftLeg = new THREE.Mesh(legGeo, legMat);
-            leftLeg.position.set(-0.16, 0.31, 0);
-            const rightLeg = new THREE.Mesh(legGeo, legMat);
-            rightLeg.position.set(0.16, 0.31, 0);
+            const leftLeg = new THREE.Mesh(legGeo, legMat); leftLeg.position.set(-0.15, 0.31, 0);
+            const rightLeg = new THREE.Mesh(legGeo, legMat); rightLeg.position.set(0.15, 0.31, 0);
 
-            const armGeo = new THREE.BoxGeometry(0.16, 0.56, 0.18);
+            const armGeo = new THREE.BoxGeometry(0.16, 0.54, 0.18);
             const armMat = new THREE.MeshLambertMaterial({ color: shirtColor });
-            const leftArm = new THREE.Mesh(armGeo, armMat);
-            leftArm.position.set(-0.4, 1.02, 0);
-            const rightArm = new THREE.Mesh(armGeo, armMat);
-            rightArm.position.set(0.4, 1.02, 0);
+            const leftArm = new THREE.Mesh(armGeo, armMat); leftArm.position.set(-0.39, 1.02, 0);
+            const rightArm = new THREE.Mesh(armGeo, armMat); rightArm.position.set(0.39, 1.02, 0);
 
-            const label = new THREE.Sprite(
-                new THREE.SpriteMaterial({ map: createTextTexture(name, 'rgba(15,23,42,0.8)', '#ffffff', 52) })
-            );
-            label.position.set(0, 2.3, 0);
-            label.scale.set(1.5, 0.38, 1);
+            // ہاتھ میں پسٹل (Pistol)
+            const gun = new THREE.Group();
+            const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.35), new THREE.MeshLambertMaterial({ color: 0x111827 }));
+            barrel.position.set(0, -0.22, -0.18);
+            const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.1), new THREE.MeshLambertMaterial({ color: 0x374151 }));
+            grip.position.set(0, -0.32, -0.05);
+            gun.add(barrel, grip);
+            rightArm.add(gun);
 
-            group.add(torso, head, hair, leftLeg, rightLeg, leftArm, rightArm, label);
-            group.scale.set(scale, scale, scale);
-            return { group, leftLeg, rightLeg, leftArm, rightArm };
+            const label = createTextLabel(name, 'rgba(15,23,42,0.8)', '#ffffff');
+            label.position.set(0, 2.28, 0);
+
+            grp.add(torso, head, hair, leftLeg, rightLeg, leftArm, rightArm, label);
+            grp.scale.set(scale, scale, scale);
+            return {
+                name,
+                mesh: grp,
+                leftLeg, rightLeg, leftArm, rightArm,
+                inVehicle: null,
+                heading: 0,
+                walkCycle: 0
+            };
         }
 
-        const usama = buildCharacter('Usama', 0x2563eb, 0x1e293b, 0.92);
-        const musa = buildCharacter('Musa', 0xf59e0b, 0x334155, 0.84);
-        scene.add(usama.group, musa.group);
+        const characters = [
+            createCharacter('Usama', 0x2563eb, 0x1e293b, 0.94),
+            createCharacter('Musa', 0xf59e0b, 0x334155, 0.86)
+        ];
 
-        // ================= 6. سکے اور دھواں =================
+        // شروع میں Usama اسپورٹس کار میں اور Musa باہر کھڑا ہے
+        characters[0].inVehicle = vehicles[0];
+        characters[1].mesh.position.set(3.5, 0, 10);
+        scene.add(characters[0].mesh, characters[1].mesh);
+
+        let activeCharIdx = 0; // 0 = Usama, 1 = Musa
+
+        // ================= 7. آگ کے شعلے (Fires to Extinguish) اور سکے =================
+        const fires = [];
+        function spawnFire() {
+            const fGroup = new THREE.Group();
+            const f1 = new THREE.Mesh(new THREE.ConeGeometry(1.4, 3.2, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+            f1.position.y = 1.6;
+            const f2 = new THREE.Mesh(new THREE.ConeGeometry(0.9, 2.4, 8), new THREE.MeshBasicMaterial({ color: 0xfacc15 }));
+            f2.position.y = 1.2;
+            fGroup.add(f1, f2);
+
+            const rx = (Math.floor(Math.random() * 7) - 3) * BLOCK_STEP + 10;
+            const rz = (Math.random() - 0.5) * 320;
+            fGroup.position.set(rx, 0, rz);
+            scene.add(fGroup);
+            fires.push({ mesh: fGroup, f1, f2, hp: 100 });
+        }
+        for (let i = 0; i < 6; i++) spawnFire();
+
         const coins = [];
-        const coinGeo = new THREE.CylinderGeometry(0.85, 0.85, 0.22, 14);
+        const coinGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 14).rotateX(Math.PI / 2);
         const coinMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
-
         function spawnCoin() {
-            const coin = new THREE.Mesh(coinGeo, coinMat);
-            coin.rotation.x = Math.PI / 2;
-            const roadX = (Math.floor(Math.random() * 9) - 4) * BLOCK_STEP;
-            const zPos = (Math.random() - 0.5) * 380;
-            coin.position.set(roadX + (Math.random() - 0.5) * 8, 1.1, zPos);
-            scene.add(coin);
-            coins.push(coin);
+            const c = new THREE.Mesh(coinGeo, coinMat);
+            const rx = (Math.floor(Math.random() * 9) - 4) * BLOCK_STEP;
+            c.position.set(rx + (Math.random() - 0.5) * 8, 1.0, (Math.random() - 0.5) * 380);
+            scene.add(c);
+            coins.push(c);
         }
-        for (let i = 0; i < 30; i++) spawnCoin();
+        for (let i = 0; i < 25; i++) spawnCoin();
 
-        const smokeParticles = [];
-        function emitSmoke(pos) {
-            const p = new THREE.Mesh(
-                new THREE.SphereGeometry(0.35, 6, 6),
-                new THREE.MeshBasicMaterial({ color: 0xcbd5e1, transparent: true, opacity: 0.5 })
+        // گولیاں، پانی کے قطرے اور چنگاریاں (Projectiles & Sparks)
+        const projectiles = [];
+        function spawnProjectile(origin, dirVec, type) {
+            const isWater = type === 'water';
+            const mesh = new THREE.Mesh(
+                new THREE.SphereGeometry(isWater ? 0.28 : 0.14, 6, 6),
+                new THREE.MeshBasicMaterial({ color: isWater ? 0x38bdf8 : 0xfacc15 })
             );
-            p.position.set(pos.x, 0.25, pos.z);
-            scene.add(p);
-            smokeParticles.push({ mesh: p, life: 1.0 });
+            mesh.position.copy(origin);
+            scene.add(mesh);
+            projectiles.push({
+                mesh,
+                vel: dirVec.clone().multiplyScalar(isWater ? 1.1 : 2.8),
+                type,
+                life: isWater ? 28 : 45
+            });
         }
 
-        // ================= 7. کنٹرولز اور اسٹیٹ =================
-        let inCar = true;
+        function spawnSparks(pos) {
+            for (let i = 0; i < 8; i++) {
+                const s = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.18, 0.18, 0.18),
+                    new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+                );
+                s.position.copy(pos);
+                s.position.y += 0.8;
+                scene.add(s);
+                projectiles.push({
+                    mesh: s,
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.6, Math.random() * 0.4, (Math.random() - 0.5) * 0.6),
+                    type: 'spark',
+                    life: 18
+                });
+            }
+        }
+
+        // ================= 8. کنٹرولز اور بٹنز =================
         let camMode = 0;
-        let speed = 0;
-        let heading = 0;
-        let driftAngle = 0;
-        let nitro = 100;
         let score = 0;
-        let driftPoints = 0;
-        let walkCycle = 0;
-        let playerPos = new THREE.Vector3(0, 0, 8);
+        let firesPutOut = 0;
+        let sprayingWater = false;
 
-        const keys = { left: false, right: false, gas: false, brake: false, nitro: false };
+        const keys = { left: false, right: false, gas: false, brake: false, nitro: false, sprint: false };
 
-        function bindBtn(id, key) {
+        function bindHold(id, key) {
             const el = document.getElementById(id);
-            const start = (e) => { e.preventDefault(); initAudio(); keys[key] = true; el.classList.add('active'); };
-            const end = (e) => { e.preventDefault(); keys[key] = false; el.classList.remove('active'); };
-            el.addEventListener('touchstart', start);
-            el.addEventListener('touchend', end);
-            el.addEventListener('mousedown', start);
-            el.addEventListener('mouseup', end);
-            el.addEventListener('mouseleave', end);
+            const on = (e) => { e.preventDefault(); initAudio(); keys[key] = true; el.classList.add('active'); };
+            const off = (e) => { e.preventDefault(); keys[key] = false; el.classList.remove('active'); };
+            el.addEventListener('touchstart', on);
+            el.addEventListener('touchend', off);
+            el.addEventListener('mousedown', on);
+            el.addEventListener('mouseup', off);
+            el.addEventListener('mouseleave', off);
         }
-        bindBtn('btn-left', 'left');
-        bindBtn('btn-right', 'right');
-        bindBtn('btn-gas', 'gas');
-        bindBtn('btn-brake', 'brake');
-        bindBtn('btn-nitro', 'nitro');
+        bindHold('btn-left', 'left');
+        bindHold('btn-right', 'right');
+        bindHold('btn-gas', 'gas');
+        bindHold('btn-brake', 'brake');
+        bindHold('btn-nitro', 'nitro');
+        bindHold('btn-sprint', 'sprint');
 
-        window.addEventListener('keydown', (e) => {
+        // پسٹل فائر بٹن
+        document.getElementById('btn-shoot').addEventListener('click', () => {
             initAudio();
-            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-            if (e.key === 'ArrowUp' || e.key === 'w') keys.gas = true;
-            if (e.key === 'ArrowDown' || e.key === 's') keys.brake = true;
-            if (e.key === 'Shift' || e.key === ' ') keys.nitro = true;
-        });
-        window.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-            if (e.key === 'ArrowUp' || e.key === 'w') keys.gas = false;
-            if (e.key === 'ArrowDown' || e.key === 's') keys.brake = false;
-            if (e.key === 'Shift' || e.key === ' ') keys.nitro = false;
+            const ch = characters[activeCharIdx];
+            if (ch.inVehicle) return;
+            const forward = new THREE.Vector3(-Math.sin(ch.heading), 0, -Math.cos(ch.heading));
+            const muzzle = ch.mesh.position.clone().add(new THREE.Vector3(0, 1.15, 0)).add(forward.clone().multiplyScalar(0.8));
+            spawnProjectile(muzzle, forward, 'bullet');
+            playSound(520, 110, 0.12, 'sawtooth', 0.2);
         });
 
-        document.getElementById('btn-mode').addEventListener('click', () => {
+        // آگ بجھانے والا پانی بٹن
+        const waterBtn = document.getElementById('btn-water');
+        waterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); sprayingWater = true; });
+        waterBtn.addEventListener('touchend', (e) => { e.preventDefault(); sprayingWater = false; });
+        waterBtn.addEventListener('mousedown', () => { initAudio(); sprayingWater = true; });
+        waterBtn.addEventListener('mouseup', () => { sprayingWater = false; });
+
+        // کردار تبدیل کرنے والا بٹن (Usama <-> Musa)
+        document.getElementById('btn-switch').addEventListener('click', () => {
             initAudio();
-            if (inCar) {
-                inCar = false;
-                speed = 0;
-                const exitOff = new THREE.Vector3(2.8, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), heading);
-                playerPos.copy(carGroup.position).add(exitOff);
-                document.getElementById('btn-mode').innerText = '🚗 گاڑی میں بیٹھیں';
+            activeCharIdx = activeCharIdx === 0 ? 1 : 0;
+            const nextChar = characters[activeCharIdx === 0 ? 1 : 0];
+            document.getElementById('btn-switch').innerText = `🔄 کردار بدلیں (${nextChar.name})`;
+            updateHUD();
+        });
+
+        // گاڑی یا ہیلی کاپٹر میں بیٹھنے / نکلنے والا بٹن
+        document.getElementById('btn-enter').addEventListener('click', () => {
+            initAudio();
+            const ch = characters[activeCharIdx];
+            if (ch.inVehicle) {
+                // اگر ہیلی کاپٹر ہوا میں ہے تو پہلے نیچے اتاریں
+                if (ch.inVehicle.type === 'air' && ch.inVehicle.mesh.position.y > 1.5) {
+                    alert('پہلے ▼ بٹن دبا کر ہیلی کاپٹر کو زمین پر اتاریں!');
+                    return;
+                }
+                const v = ch.inVehicle;
+                const exitPos = new THREE.Vector3(3.0, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), v.heading);
+                ch.mesh.position.copy(v.mesh.position).add(exitPos);
+                ch.mesh.position.y = 0;
+                ch.heading = v.heading;
+                ch.inVehicle = null;
+                v.speed = 0;
             } else {
-                if (playerPos.distanceTo(carGroup.position) < 9) {
-                    inCar = true;
-                    document.getElementById('btn-mode').innerText = '🚶 پیدل چلیں';
+                // قریبی گاڑی یا ہیلی کاپٹر تلاش کریں
+                let nearest = null;
+                let minDist = 8.5;
+                for (let v of vehicles) {
+                    const d = ch.mesh.position.distanceTo(v.mesh.position);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearest = v;
+                    }
+                }
+                if (nearest) {
+                    ch.inVehicle = nearest;
                 }
             }
+            updateHUD();
         });
 
         document.getElementById('btn-cam').addEventListener('click', () => {
             camMode = (camMode + 1) % 3;
         });
 
-        const minimapCanvas = document.getElementById('minimap');
-        const mCtx = minimapCanvas.getContext('2d');
+        function updateHUD() {
+            const ch = characters[activeCharIdx];
+            document.getElementById('active-char-badge').innerText = `کردار: ${ch.name}`;
+            const footBar = document.getElementById('foot-actions');
+            const enterBtn = document.getElementById('btn-enter');
+            const vStatus = document.getElementById('vehicle-status');
 
-        function drawMinimap(targetPos) {
-            mCtx.clearRect(0, 0, 120, 120);
+            if (ch.inVehicle) {
+                footBar.style.display = 'none';
+                enterBtn.innerText = '🚶 باہر نکلیں (Exit)';
+                vStatus.innerText = ` سوار: ${ch.inVehicle.name}`;
+            } else {
+                footBar.style.display = 'flex';
+                enterBtn.innerText = '🚗 گاڑی/ہیلی میں بیٹھیں';
+                vStatus.innerText = '🏃 پیدل چل رہے ہیں';
+            }
+        }
+        updateHUD();
+
+        // کی بورڈ سپورٹ
+        window.addEventListener('keydown', (e) => {
+            initAudio();
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.gas = true;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.brake = true;
+            if (e.key === 'Shift') keys.sprint = true;
+            if (e.key === ' ') keys.nitro = true;
+        });
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+            if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+            if (e.key === 'ArrowUp' || e.key === 'w') keys.gas = false;
+            if (e.key === 'ArrowDown' || e.key === 's') keys.brake = false;
+            if (e.key === 'Shift') keys.sprint = false;
+            if (e.key === ' ') keys.nitro = false;
+        });
+
+        // ================= 9. ٹکراؤ چیک کرنے والا فنکشن (Collision Physics) =================
+        function checkCollision(x, z, radius, ignoreMesh = null) {
+            // عمارتوں سے ٹکراؤ
+            for (let b of buildings) {
+                if (Math.abs(x - b.x) < (b.hw + radius * 0.4) && Math.abs(z - b.z) < (b.hd + radius * 0.4)) {
+                    return true;
+                }
+            }
+            // دوسری گاڑیوں سے ٹکراؤ
+            for (let v of vehicles) {
+                if (v.mesh === ignoreMesh) continue;
+                if (v.type === 'air' && v.mesh.position.y > 2.5) continue;
+                const dx = x - v.mesh.position.x;
+                const dz = z - v.mesh.position.z;
+                if (Math.hypot(dx, dz) < (radius + v.radius)) {
+                    return true;
+                }
+            }
+            // ٹریفک گاڑیوں سے ٹکراؤ
+            for (let tc of trafficCars) {
+                if (tc.mesh === ignoreMesh) continue;
+                const dx = x - tc.mesh.position.x;
+                const dz = z - tc.mesh.position.z;
+                if (Math.hypot(dx, dz) < (radius + 2.4)) {
+                    return true;
+                }
+            }
+            // پولیس کار سے ٹکراؤ
+            if (policeCar.mesh !== ignoreMesh) {
+                const dx = x - policeCar.mesh.position.x;
+                const dz = z - policeCar.mesh.position.z;
+                if (Math.hypot(dx, dz) < (radius + 2.4)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // منی میپ
+        const mCtx = document.getElementById('minimap').getContext('2d');
+        function drawMinimap(centerPos) {
+            mCtx.clearRect(0, 0, 110, 110);
             mCtx.fillStyle = '#0f172a';
-            mCtx.fillRect(0, 0, 120, 120);
+            mCtx.fillRect(0, 0, 110, 110);
+            const sc = 0.24, cx = 55, cy = 55;
 
-            const scale = 0.25;
-            const cx = 60, cy = 60;
-
-            mCtx.fillStyle = '#facc15';
-            for (let c of coins) {
-                const dx = (c.position.x - targetPos.x) * scale;
-                const dz = (c.position.z - targetPos.z) * scale;
-                if (Math.abs(dx) < 56 && Math.abs(dz) < 56) {
-                    mCtx.beginPath();
-                    mCtx.arc(cx + dx, cy + dz, 2.2, 0, Math.PI * 2);
-                    mCtx.fill();
+            // آگ (Fires)
+            mCtx.fillStyle = '#f97316';
+            for (let f of fires) {
+                const dx = (f.mesh.position.x - centerPos.x) * sc;
+                const dz = (f.mesh.position.z - centerPos.z) * sc;
+                if (Math.abs(dx) < 52 && Math.abs(dz) < 52) {
+                    mCtx.beginPath(); mCtx.arc(cx + dx, cy + dz, 3.5, 0, Math.PI * 2); mCtx.fill();
                 }
             }
 
-            mCtx.fillStyle = '#ef4444';
-            const pdx = (policeCar.position.x - targetPos.x) * scale;
-            const pdz = (policeCar.position.z - targetPos.z) * scale;
-            mCtx.beginPath();
-            mCtx.arc(cx + pdx, cy + pdz, 3.8, 0, Math.PI * 2);
-            mCtx.fill();
+            // ہیلی کاپٹر
+            mCtx.fillStyle = '#a855f7';
+            const hdx = (helicopter.mesh.position.x - centerPos.x) * sc;
+            const hdz = (helicopter.mesh.position.z - centerPos.z) * sc;
+            mCtx.fillRect(cx + hdx - 3, cy + hdz - 3, 6, 6);
 
+            // دوسرا کردار
+            const other = characters[activeCharIdx === 0 ? 1 : 0];
+            mCtx.fillStyle = '#4ade80';
+            const odx = (other.mesh.position.x - centerPos.x) * sc;
+            const odz = (other.mesh.position.z - centerPos.z) * sc;
+            mCtx.beginPath(); mCtx.arc(cx + odx, cy + odz, 3.2, 0, Math.PI * 2); mCtx.fill();
+
+            // فعال کھلاڑی
             mCtx.fillStyle = '#38bdf8';
-            mCtx.beginPath();
-            mCtx.arc(cx, cy, 4.2, 0, Math.PI * 2);
-            mCtx.fill();
+            mCtx.beginPath(); mCtx.arc(cx, cy, 4.2, 0, Math.PI * 2); mCtx.fill();
         }
 
-        // ================= 8. مین لوپ =================
+        // ================= 10. مین گیم لوپ =================
         let tick = 0;
 
         function animate() {
             requestAnimationFrame(animate);
-            tick += 0.016;
+            tick += 0.02;
 
-            sirenRed.visible = Math.floor(tick * 8) % 2 === 0;
-            sirenBlue.visible = !sirenRed.visible;
+            // پولیس سائرن
+            sirenR.visible = Math.floor(tick * 6) % 2 === 0;
+            sirenB.visible = !sirenR.visible;
 
-            // ٹریفک گاڑیاں چلانا
-            for (let tc of trafficCars) {
-                tc.mesh.position.z += tc.speed;
-                if (tc.mesh.position.z > 240) tc.mesh.position.z = -240;
-                tc.wheels.forEach(w => { w.rotation.x += tc.speed * 0.7; });
+            // آگ کے شعلوں کی حرکت
+            for (let f of fires) {
+                f.f1.scale.y = 0.85 + Math.sin(tick * 10) * 0.25;
+                f.f2.rotation.y += 0.1;
             }
 
-            let activeTarget;
+            // ٹریفک گاڑیاں (ٹکراؤ کے ساتھ)
+            for (let tc of trafficCars) {
+                const nextZ = tc.mesh.position.z + tc.speed;
+                if (!checkCollision(tc.mesh.position.x, nextZ, 2.3, tc.mesh)) {
+                    tc.mesh.position.z = nextZ > 240 ? -240 : nextZ;
+                    tc.wheels.forEach(w => { w.rotation.x += tc.speed * 0.6; });
+                }
+            }
 
-            if (inCar) {
-                const usingNitro = keys.nitro && nitro > 2 && keys.gas;
-                const topSpeed = usingNitro ? 1.55 : 1.05;
-                const acceleration = usingNitro ? 0.045 : 0.025;
+            const activeChar = characters[activeCharIdx];
+            const otherChar = characters[activeCharIdx === 0 ? 1 : 0];
 
-                if (usingNitro) {
-                    nitro = Math.max(0, nitro - 0.65);
-                    nitroFlame.visible = true;
-                    nitroFlame.scale.set(1, 1, 0.8 + Math.random() * 0.6);
+            // --- فعال کردار یا گاڑی کا کنٹرول ---
+            if (activeChar.inVehicle) {
+                const v = activeChar.inVehicle;
+
+                if (v.type === 'air') {
+                    // ہیلی کاپٹر اڑانا
+                    helicopter.mainRotor.rotation.y += 0.45;
+                    helicopter.tailRotor.rotation.x += 0.55;
+
+                    if (keys.gas) v.mesh.position.y = Math.min(45, v.mesh.position.y + 0.28);
+                    if (keys.brake) v.mesh.position.y = Math.max(0.2, v.mesh.position.y - 0.25);
+
+                    if (v.mesh.position.y > 0.6) {
+                        if (keys.left) v.heading += 0.035;
+                        if (keys.right) v.heading -= 0.035;
+                        if (keys.nitro) {
+                            v.speed = Math.min(1.15, v.speed + 0.04);
+                        } else {
+                            v.speed *= 0.96;
+                        }
+                        v.mesh.position.x -= Math.sin(v.heading) * v.speed;
+                        v.mesh.position.z -= Math.cos(v.heading) * v.speed;
+                        v.mesh.rotation.x = -v.speed * 0.22; // آگے جھکاؤ
+                    } else {
+                        v.speed = 0;
+                        v.mesh.rotation.x = 0;
+                    }
+                    v.mesh.rotation.y = v.heading;
+                    document.getElementById('speed-num').innerText = Math.round(v.speed * 160);
                 } else {
-                    nitro = Math.min(100, nitro + 0.18);
-                    nitroFlame.visible = false;
-                }
-                document.getElementById('nitro-bar').style.width = nitro + '%';
+                    // زمین پر گاڑی چلانا (اسپورٹس کار یا فائر ٹرک)
+                    const maxSpd = keys.nitro ? 1.35 : 0.92;
+                    const acc = keys.nitro ? 0.04 : 0.024;
+                    if (keys.gas) v.speed += acc;
+                    if (keys.brake) v.speed -= 0.032;
+                    v.speed = Math.max(-0.45, Math.min(maxSpd, v.speed));
+                    v.speed *= 0.96;
 
-                if (keys.gas) speed += acceleration;
-                if (keys.brake) speed -= 0.032;
-                speed = Math.max(-0.45, Math.min(topSpeed, speed));
-                speed *= 0.965;
-
-                let targetDrift = 0;
-                if (Math.abs(speed) > 0.02) {
-                    const dir = speed > 0 ? 1 : -1;
-                    if (keys.left) {
-                        heading += 0.042 * dir;
-                        if (Math.abs(speed) > 0.65) targetDrift = 0.28;
+                    if (Math.abs(v.speed) > 0.02) {
+                        const dir = v.speed > 0 ? 1 : -1;
+                        if (keys.left) v.heading += 0.042 * dir;
+                        if (keys.right) v.heading -= 0.042 * dir;
                     }
-                    if (keys.right) {
-                        heading -= 0.042 * dir;
-                        if (Math.abs(speed) > 0.65) targetDrift = -0.28;
+
+                    const nextX = v.mesh.position.x - Math.sin(v.heading) * v.speed;
+                    const nextZ = v.mesh.position.z - Math.cos(v.heading) * v.speed;
+
+                    if (!checkCollision(nextX, nextZ, v.radius, v.mesh)) {
+                        v.mesh.position.x = nextX;
+                        v.mesh.position.z = nextZ;
+                    } else {
+                        // ٹکرانے پر رک کر پیچھے اچھلنا اور چنگاریاں نکلنا
+                        if (Math.abs(v.speed) > 0.15) {
+                            spawnSparks(v.mesh.position);
+                            playSound(130, 35, 0.22, 'triangle', 0.25);
+                        }
+                        v.speed = -v.speed * 0.5;
                     }
-                }
-                driftAngle += (targetDrift - driftAngle) * 0.15;
 
-                if (Math.abs(driftAngle) > 0.14 && Math.abs(speed) > 0.65) {
-                    driftPoints += 1;
-                    document.getElementById('drift-score').innerText = driftPoints;
-                    if (Math.random() > 0.4) emitSmoke(carGroup.position);
-                }
-
-                carGroup.rotation.y = heading + driftAngle;
-                carGroup.position.x -= Math.sin(heading) * speed;
-                carGroup.position.z -= Math.cos(heading) * speed;
-
-                playerCarObj.wheels.forEach(w => { w.rotation.x -= speed * 0.8; });
-
-                for (let b of buildings) {
-                    if (Math.abs(carGroup.position.x - b.x) < b.hw && Math.abs(carGroup.position.z - b.z) < b.hd) {
-                        speed = -speed * 0.65;
-                        playTone(120, 35, 0.2, 'triangle', 0.22);
-                    }
-                }
-
-                const uSeat = new THREE.Vector3(-0.45, 0.55, 0.15).applyAxisAngle(new THREE.Vector3(0, 1, 0), heading + driftAngle);
-                const mSeat = new THREE.Vector3(0.45, 0.55, -0.25).applyAxisAngle(new THREE.Vector3(0, 1, 0), heading + driftAngle);
-                usama.group.position.copy(carGroup.position).add(uSeat);
-                musa.group.position.copy(carGroup.position).add(mSeat);
-                usama.group.rotation.y = heading + driftAngle + Math.PI;
-                musa.group.rotation.y = heading + driftAngle + Math.PI;
-                usama.leftLeg.rotation.x = usama.rightLeg.rotation.x = 0;
-                musa.leftLeg.rotation.x = musa.rightLeg.rotation.x = 0;
-
-                activeTarget = carGroup.position;
-                document.getElementById('speed-num').innerText = Math.round(Math.abs(speed) * 145);
-
-                if (engineOsc && soundEnabled && audioCtx) {
-                    engineOsc.frequency.setTargetAtTime(55 + Math.abs(speed) * 110, audioCtx.currentTime, 0.05);
+                    v.mesh.rotation.y = v.heading;
+                    v.wheels.forEach(w => { w.rotation.x -= v.speed * 0.75; });
+                    document.getElementById('speed-num').innerText = Math.round(Math.abs(v.speed) * 145);
                 }
             } else {
-                nitroFlame.visible = false;
-                let walkSpd = 0;
-                if (keys.gas) walkSpd = 0.24;
-                if (keys.brake) walkSpd = -0.16;
-                if (keys.left) heading += 0.048;
-                if (keys.right) heading -= 0.048;
+                // پیدل چلنا اور دوڑنا (Sprint)
+                const moveSpd = keys.sprint ? 0.42 : 0.22;
+                let spd = 0;
+                if (keys.gas) spd = moveSpd;
+                if (keys.brake) spd = -0.15;
+                if (keys.left) activeChar.heading += 0.05;
+                if (keys.right) activeChar.heading -= 0.05;
 
-                const nx = playerPos.x - Math.sin(heading) * walkSpd;
-                const nz = playerPos.z - Math.cos(heading) * walkSpd;
+                const nx = activeChar.mesh.position.x - Math.sin(activeChar.heading) * spd;
+                const nz = activeChar.mesh.position.z - Math.cos(activeChar.heading) * spd;
 
-                let blocked = false;
-                for (let b of buildings) {
-                    if (Math.abs(nx - b.x) < b.hw && Math.abs(nz - b.z) < b.hd) { blocked = true; break; }
+                if (!checkCollision(nx, nz, 0.7)) {
+                    activeChar.mesh.position.x = nx;
+                    activeChar.mesh.position.z = nz;
                 }
-                if (!blocked) { playerPos.x = nx; playerPos.z = nz; }
+                activeChar.mesh.rotation.y = activeChar.heading + Math.PI;
 
-                if (Math.abs(walkSpd) > 0.01) {
-                    walkCycle += 0.26;
-                    const swing = Math.sin(walkCycle) * 0.55;
-                    usama.leftLeg.rotation.x = swing;
-                    usama.rightLeg.rotation.x = -swing;
-                    usama.leftArm.rotation.x = -swing * 0.7;
-                    usama.rightArm.rotation.x = swing * 0.7;
-
-                    musa.leftLeg.rotation.x = -swing;
-                    musa.rightLeg.rotation.x = swing;
-                    musa.leftArm.rotation.x = swing * 0.7;
-                    musa.rightArm.rotation.x = -swing * 0.7;
+                if (Math.abs(spd) > 0.01) {
+                    activeChar.walkCycle += keys.sprint ? 0.38 : 0.24;
+                    const sw = Math.sin(activeChar.walkCycle) * (keys.sprint ? 0.75 : 0.5);
+                    activeChar.leftLeg.rotation.x = sw;
+                    activeChar.rightLeg.rotation.x = -sw;
+                    activeChar.leftArm.rotation.x = -sw * 0.6;
+                    activeChar.rightArm.rotation.x = sw * 0.6;
                 } else {
-                    usama.leftLeg.rotation.x = usama.rightLeg.rotation.x = 0;
-                    musa.leftLeg.rotation.x = musa.rightLeg.rotation.x = 0;
+                    activeChar.leftLeg.rotation.x = activeChar.rightLeg.rotation.x = 0;
+                    activeChar.leftArm.rotation.x = activeChar.rightArm.rotation.x = 0;
                 }
 
-                const musaOff = new THREE.Vector3(1.15, 0, -0.4).applyAxisAngle(new THREE.Vector3(0, 1, 0), heading);
-                usama.group.position.set(playerPos.x, 0, playerPos.z);
-                usama.group.rotation.y = heading + Math.PI;
-                musa.group.position.set(playerPos.x + musaOff.x, 0, playerPos.z + musaOff.z);
-                musa.group.rotation.y = heading + Math.PI;
+                // پانی کی پھوار (آگ بجھانے کے لیے)
+                if (sprayingWater) {
+                    const fwd = new THREE.Vector3(-Math.sin(activeChar.heading), 0, -Math.cos(activeChar.heading));
+                    const nozzle = activeChar.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0)).add(fwd.clone().multiplyScalar(0.7));
+                    spawnProjectile(nozzle, fwd, 'water');
+                }
 
-                activeTarget = playerPos;
-                document.getElementById('speed-num').innerText = Math.round(Math.abs(walkSpd) * 35);
+                document.getElementById('speed-num').innerText = Math.round(Math.abs(spd) * 40);
             }
 
-            // پولیس کا پیچھا
-            const toPlayer = new THREE.Vector3().subVectors(activeTarget, policeCar.position);
-            const distToPlayer = toPlayer.length();
-            if (distToPlayer > 7 && distToPlayer < 220) {
-                toPlayer.normalize();
-                const pSpeed = score >= 100 ? 0.58 : 0.38;
-                policeCar.position.x += toPlayer.x * pSpeed;
-                policeCar.position.z += toPlayer.z * pSpeed;
-                policeCar.rotation.y = Math.atan2(-toPlayer.x, -toPlayer.z);
-                policeObj.wheels.forEach(w => { w.rotation.x += pSpeed * 0.7; });
+            // دونوں کرداروں کی پوزیشن اپ ڈیٹ (اگر گاڑی میں ہوں تو سیٹ پر بٹھائیں)
+            characters.forEach((ch, idx) => {
+                if (ch.inVehicle) {
+                    const v = ch.inVehicle;
+                    const seatOff = new THREE.Vector3(idx === 0 ? -0.45 : 0.45, 0.55, 0)
+                        .applyAxisAngle(new THREE.Vector3(0, 1, 0), v.heading);
+                    ch.mesh.position.copy(v.mesh.position).add(seatOff);
+                    ch.mesh.rotation.y = v.heading + Math.PI;
+                    ch.leftLeg.rotation.x = ch.rightLeg.rotation.x = 0;
+                }
+            });
+
+            // اگر دوسرا کردار پیدل ہو اور بہت دور ہو تو آہستہ آہستہ قریب آئے
+            if (!otherChar.inVehicle) {
+                const targetPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
+                const diff = new THREE.Vector3().subVectors(targetPos, otherChar.mesh.position);
+                diff.y = 0;
+                if (diff.length() > 6 && diff.length() < 60) {
+                    diff.normalize();
+                    const ox = otherChar.mesh.position.x + diff.x * 0.16;
+                    const oz = otherChar.mesh.position.z + diff.z * 0.16;
+                    if (!checkCollision(ox, oz, 0.7)) {
+                        otherChar.mesh.position.x = ox;
+                        otherChar.mesh.position.z = oz;
+                        otherChar.mesh.rotation.y = Math.atan2(-diff.x, -diff.z) + Math.PI;
+                        otherChar.walkCycle += 0.22;
+                        otherChar.leftLeg.rotation.x = Math.sin(otherChar.walkCycle) * 0.45;
+                        otherChar.rightLeg.rotation.x = -Math.sin(otherChar.walkCycle) * 0.45;
+                    }
+                } else {
+                    otherChar.leftLeg.rotation.x = otherChar.rightLeg.rotation.x = 0;
+                }
             }
-            document.getElementById('wanted-stars').innerText = score >= 200 ? '★ ★ ★' : score >= 80 ? '★ ★ ☆' : '★ ☆ ☆';
+
+            // گولیاں اور پانی اپ ڈیٹ کرنا
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.mesh.position.add(p.vel);
+                p.life--;
+
+                if (p.type === 'water') {
+                    // آگ بجھانا چیک کریں
+                    for (let j = fires.length - 1; j >= 0; j--) {
+                        if (p.mesh.position.distanceTo(fires[j].mesh.position) < 2.8) {
+                            fires[j].hp -= 6;
+                            fires[j].mesh.scale.setScalar(Math.max(0.2, fires[j].hp / 100));
+                            if (fires[j].hp <= 0) {
+                                scene.remove(fires[j].mesh);
+                                fires.splice(j, 1);
+                                firesPutOut++;
+                                score += 50;
+                                document.getElementById('fires-put').innerText = firesPutOut;
+                                document.getElementById('score').innerText = score;
+                                playSound(600, 1200, 0.25, 'sine', 0.2);
+                                spawnFire();
+                            }
+                        }
+                    }
+                } else if (p.type === 'bullet') {
+                    // گولی کسی گاڑی یا عمارت سے ٹکرائے تو چنگاری نکلے
+                    if (checkCollision(p.mesh.position.x, p.mesh.position.z, 0.2)) {
+                        spawnSparks(p.mesh.position);
+                        p.life = 0;
+                    }
+                }
+
+                if (p.life <= 0) {
+                    scene.remove(p.mesh);
+                    projectiles.splice(i, 1);
+                }
+            }
 
             // سکے جمع کرنا
+            const focusPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
+            const focusHeading = activeChar.inVehicle ? activeChar.inVehicle.heading : activeChar.heading;
+
             for (let i = coins.length - 1; i >= 0; i--) {
                 coins[i].rotation.z += 0.06;
-                if (activeTarget.distanceTo(coins[i].position) < 2.8) {
+                if (focusPos.distanceTo(coins[i].position) < 3.0) {
                     scene.remove(coins[i]);
                     coins.splice(i, 1);
                     score += 10;
                     document.getElementById('score').innerText = score;
-                    playTone(880, 1320, 0.14, 'sine', 0.14);
+                    playSound(880, 1320, 0.14, 'sine', 0.14);
                     spawnCoin();
                 }
             }
 
-            // دھواں
-            for (let i = smokeParticles.length - 1; i >= 0; i--) {
-                const sp = smokeParticles[i];
-                sp.life -= 0.04;
-                sp.mesh.scale.multiplyScalar(1.04);
-                sp.mesh.material.opacity = sp.life * 0.45;
-                if (sp.life <= 0) {
-                    scene.remove(sp.mesh);
-                    smokeParticles.splice(i, 1);
-                }
-            }
+            // کیمرہ فالو
+            let camOff;
+            if (!activeChar.inVehicle) camOff = new THREE.Vector3(0, 3.8, 7.2);
+            else if (activeChar.inVehicle.type === 'air') camOff = new THREE.Vector3(0, 7.5, 16);
+            else if (camMode === 0) camOff = new THREE.Vector3(0, 5.2, 11.5);
+            else if (camMode === 1) camOff = new THREE.Vector3(0, 11, 20);
+            else camOff = new THREE.Vector3(0, 2.2, -0.3);
 
-            // کیمرہ
-            let camOffset;
-            if (!inCar) camOffset = new THREE.Vector3(0, 4.2, 7.5);
-            else if (camMode === 0) camOffset = new THREE.Vector3(0, 5.2, 11.5);
-            else if (camMode === 1) camOffset = new THREE.Vector3(0, 11, 20);
-            else camOffset = new THREE.Vector3(0, 2.1, -0.3);
+            camOff.applyAxisAngle(new THREE.Vector3(0, 1, 0), focusHeading);
+            camera.position.lerp(focusPos.clone().add(camOff), 0.14);
+            camera.lookAt(focusPos.x, focusPos.y + 1.4, focusPos.z);
 
-            camOffset.applyAxisAngle(new THREE.Vector3(0, 1, 0), heading);
-            camera.position.lerp(activeTarget.clone().add(camOffset), camMode === 2 ? 0.45 : 0.12);
-            const lookTarget = camMode === 2 && inCar
-                ? activeTarget.clone().add(new THREE.Vector3(-Math.sin(heading) * 20, 1.5, -Math.cos(heading) * 20))
-                : new THREE.Vector3(activeTarget.x, activeTarget.y + 1.3, activeTarget.z);
-            camera.lookAt(lookTarget);
-
-            drawMinimap(activeTarget);
+            drawMinimap(focusPos);
             renderer.render(scene, camera);
         }
 

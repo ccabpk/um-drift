@@ -13,7 +13,6 @@
             touch-action: none;
             user-select: none;
         }
-        /* ٹاپ HUD */
         #hud-top {
             position: absolute;
             top: 10px;
@@ -58,7 +57,6 @@
             margin-top: 2px;
         }
 
-        /* منی میپ */
         #minimap-wrap {
             position: absolute;
             bottom: 108px;
@@ -75,7 +73,6 @@
         }
         #minimap { width: 100%; height: 100%; display: block; }
 
-        /* سپیڈومیٹر */
         #speedo {
             position: absolute;
             bottom: 108px;
@@ -92,7 +89,6 @@
         #speed-num { font-size: 20px; font-weight: 900; color: #38bdf8; line-height: 1; }
         #speed-unit { font-size: 9px; color: #94a3b8; }
 
-        /* اوپر دائیں جانب ایکشن مینو */
         #action-bar {
             position: absolute;
             top: 74px;
@@ -118,7 +114,6 @@
         #btn-switch { border-color: #4ade80; color: #4ade80; }
         #btn-cam { border-color: #facc15; color: #facc15; }
 
-        /* پیدل ایکشن بٹنز (فائر، آگ بجھانا، دوڑنا) */
         #foot-actions {
             position: absolute;
             bottom: 108px;
@@ -137,11 +132,10 @@
             font-weight: bold;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        #btn-shoot { background: rgba(220, 38, 38, 0.85); border-color: #fca5a5; }
-        #btn-water { background: rgba(2, 132, 199, 0.85); border-color: #7dd3fc; }
-        #btn-sprint { background: rgba(217, 119, 6, 0.85); border-color: #fcd34d; }
+        #btn-shoot { background: rgba(220, 38, 38, 0.88); border-color: #fca5a5; }
+        #btn-water { background: rgba(2, 132, 199, 0.88); border-color: #7dd3fc; }
+        #btn-sprint { background: rgba(217, 119, 6, 0.88); border-color: #fcd34d; }
 
-        /* نیچے کنٹرول بٹن */
         .controls {
             position: absolute;
             bottom: 14px;
@@ -215,7 +209,6 @@
         <button class="action-btn" id="btn-cam">🎥 کیمرہ بدلیں</button>
     </div>
 
-    <!-- پیدل چلنے کے دوران ہتھیار اور ایکشن بٹنز -->
     <div id="foot-actions">
         <button class="foot-btn" id="btn-shoot">🔫 فائر</button>
         <button class="foot-btn" id="btn-water">🧯 پانی</button>
@@ -277,8 +270,8 @@
 
         // ================= 2. سین اور کیمرہ =================
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x38bdf8); // روشن دن کا آسمان
-        scene.fog = new THREE.Fog(0x7dd3fc, 70, 280);
+        scene.background = new THREE.Color(0x38bdf8);
+        scene.fog = new THREE.Fog(0x7dd3fc, 80, 300);
 
         const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.2, 550);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -286,8 +279,7 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         document.body.appendChild(renderer.domElement);
 
-        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x334155, 0.85);
-        scene.add(hemiLight);
+        scene.add(new THREE.HemisphereLight(0xffffff, 0x334155, 0.85));
         const sunLight = new THREE.DirectionalLight(0xfffbeb, 0.95);
         sunLight.position.set(80, 150, 60);
         scene.add(sunLight);
@@ -339,9 +331,9 @@
 
         for (let bx = -224; bx <= 224; bx += BLOCK_STEP) {
             for (let bz = -224; bz <= 224; bz += BLOCK_STEP) {
-                if (Math.abs(bx) < 45 && Math.abs(bz) < 45) continue;
+                if (Math.abs(bx) < 48 && Math.abs(bz) < 48) continue;
 
-                const pad = new THREE.Mesh(new THREE.BoxGeometry(44, 0.35, 44), sidewalkMat);
+                const pad = new THREE.Mesh(new THREE.BoxGeometry(42, 0.35, 42), sidewalkMat);
                 pad.position.set(bx, 0.17, bz);
                 scene.add(pad);
 
@@ -354,11 +346,11 @@
                 );
                 bMesh.position.set(bx, h / 2 + 0.35, bz);
                 scene.add(bMesh);
-                buildings.push({ x: bx, z: bz, hw: w / 2 + 1.5, hd: d / 2 + 1.5 });
+                buildings.push({ x: bx, z: bz, hw: w / 2 + 1.0, hd: d / 2 + 1.0 });
             }
         }
 
-        // ہیلی پیڈ (Helipad) سینٹرل پلازہ میں
+        // ہیلی پیڈ
         const helipad = new THREE.Mesh(
             new THREE.CylinderGeometry(8, 8, 0.2, 24),
             new THREE.MeshLambertMaterial({ color: 0x334155 })
@@ -373,7 +365,7 @@
         scene.add(helipad, hRing);
 
         // ================= 4. اصل شیپ والی پروفیشنل گاڑیاں =================
-        function createRealisticCar(primaryColor, accentColor, type = 'sports') {
+        function createRealisticCar(primaryColor, type = 'sports') {
             const car = new THREE.Group();
             const bodyMat = new THREE.MeshLambertMaterial({ color: primaryColor });
             const darkMat = new THREE.MeshLambertMaterial({ color: 0x111827 });
@@ -381,7 +373,6 @@
             const chromeMat = new THREE.MeshLambertMaterial({ color: 0xe2e8f0 });
 
             if (type === 'firetruck') {
-                // فائر بریگیڈ ٹرک
                 const cab = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.8, 2.2), bodyMat);
                 cab.position.set(0, 1.35, -1.8);
                 const tank = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.65, 3.8), bodyMat);
@@ -392,25 +383,20 @@
                 cabGlass.position.set(0, 1.65, -2.91);
                 car.add(cab, tank, ladder, cabGlass);
             } else {
-                // ایرو ڈائنامک اسپورٹس / سیڈان باڈی
                 const lowerChassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.55, 4.7), bodyMat);
                 lowerChassis.position.set(0, 0.58, 0);
 
-                // ڈھلوان بونٹ (Sloped Hood)
                 const hood = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.26, 1.65), bodyMat);
                 hood.position.set(0, 0.88, -1.45);
                 hood.rotation.x = 0.14;
 
-                // ڈگی (Rear Trunk)
                 const trunk = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.28, 1.15), bodyMat);
                 trunk.position.set(0, 0.9, 1.68);
                 trunk.rotation.x = -0.08;
 
-                // کیبن چھت
                 const roof = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.52, 1.75), bodyMat);
                 roof.position.set(0, 1.25, 0.08);
 
-                // آگے اور پیچھے ترچھے شیشے (Windshields)
                 const frontGlass = new THREE.Mesh(new THREE.BoxGeometry(1.66, 0.52, 0.12), glassMat);
                 frontGlass.position.set(0, 1.16, -0.82);
                 frontGlass.rotation.x = -0.52;
@@ -419,17 +405,14 @@
                 rearGlass.position.set(0, 1.16, 0.98);
                 rearGlass.rotation.x = 0.52;
 
-                // سائیڈ کھڑکیاں
                 const sideGlass = new THREE.Mesh(new THREE.BoxGeometry(1.76, 0.4, 1.5), glassMat);
                 sideGlass.position.set(0, 1.23, 0.08);
 
-                // فرنٹ اور بیک بمپرز + گرل
                 const fBumper = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.32, 0.35), darkMat);
                 fBumper.position.set(0, 0.45, -2.32);
                 const rBumper = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.32, 0.35), darkMat);
                 rBumper.position.set(0, 0.45, 2.32);
 
-                // سائیڈ مررز
                 const mirrorL = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.15, 0.18), bodyMat);
                 mirrorL.position.set(-1.18, 1.05, -0.65);
                 const mirrorR = mirrorL.clone();
@@ -448,23 +431,17 @@
                 }
             }
 
-            // ہیڈلائٹس اور ٹیل لائٹس
             const hl1 = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             hl1.position.set(-0.74, 0.72, -2.36);
-            const hl2 = hl1.clone();
-            hl2.position.set(0.74, 0.72, -2.36);
+            const hl2 = hl1.clone(); hl2.position.set(0.74, 0.72, -2.36);
 
             const tl1 = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.1), new THREE.MeshBasicMaterial({ color: 0xff1e1e }));
             tl1.position.set(-0.72, 0.76, 2.36);
-            const tl2 = tl1.clone();
-            tl2.position.set(0.72, 0.76, 2.36);
+            const tl2 = tl1.clone(); tl2.position.set(0.72, 0.76, 2.36);
             car.add(hl1, hl2, tl1, tl2);
 
-            // وہیل آرچز اور الائے رمز والے پہیے
-            const tireGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 18);
-            tireGeo.rotateZ(Math.PI / 2);
-            const rimGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.37, 12);
-            rimGeo.rotateZ(Math.PI / 2);
+            const tireGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.35, 16).rotateZ(Math.PI / 2);
+            const rimGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.37, 10).rotateZ(Math.PI / 2);
 
             const wheels = [];
             const zFront = type === 'firetruck' ? -2.0 : -1.45;
@@ -482,13 +459,11 @@
             return { mesh: car, wheels };
         }
 
-        // 1. کھلاڑی کی اسپورٹس کار
-        const sportsCar = createRealisticCar(0xdc2626, 0x0f172a, 'sports');
-        sportsCar.mesh.position.set(0, 0, 10);
+        const sportsCar = createRealisticCar(0xdc2626, 'sports');
+        sportsCar.mesh.position.set(0, 0, 12);
         scene.add(sportsCar.mesh);
 
-        // 2. پولیس کار
-        const policeCar = createRealisticCar(0x0f172a, 0xffffff, 'sedan');
+        const policeCar = createRealisticCar(0x0f172a, 'sedan');
         const pDoor = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.5, 1.7), new THREE.MeshLambertMaterial({ color: 0xffffff }));
         pDoor.position.set(0, 0.6, 0.05);
         const sirenR = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.18, 0.25), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
@@ -496,27 +471,25 @@
         const sirenB = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.18, 0.25), new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
         sirenB.position.set(0.35, 1.58, 0.05);
         policeCar.mesh.add(pDoor, sirenR, sirenB);
-        policeCar.mesh.position.set(64, 0, -64);
+        policeCar.mesh.position.set(32, 0, -32);
         scene.add(policeCar.mesh);
 
-        // 3. فائر بریگیڈ ٹرک
-        const fireTruck = createRealisticCar(0xb91c1c, 0xffffff, 'firetruck');
-        fireTruck.mesh.position.set(22, 0, -15);
+        const fireTruck = createRealisticCar(0xb91c1c, 'firetruck');
+        fireTruck.mesh.position.set(16, 0, -10);
         scene.add(fireTruck.mesh);
 
-        // 4. ٹریفک گاڑیاں
         const trafficCars = [];
         const tColors = [0x16a34a, 0xeab308, 0x7c3aed, 0x0284c7, 0xf97316, 0xe2e8f0];
-        for (let i = 0; i < 8; i++) {
-            const tc = createRealisticCar(tColors[i % tColors.length], 0x1e293b, 'sedan');
-            const rx = ((i % 5) - 2) * BLOCK_STEP + 6;
-            const rz = -190 + i * 52;
+        for (let i = 0; i < 6; i++) {
+            const tc = createRealisticCar(tColors[i % tColors.length], 'sedan');
+            const rx = ((i % 3) - 1) * BLOCK_STEP + 8;
+            const rz = -120 + i * 48;
             tc.mesh.position.set(rx, 0, rz);
             scene.add(tc.mesh);
-            trafficCars.push({ mesh: tc.mesh, wheels: tc.wheels, speed: 0.26 + (i % 3) * 0.07 });
+            trafficCars.push({ mesh: tc.mesh, wheels: tc.wheels, speed: 0.24 });
         }
 
-        // ================= 5. اڑنے والا ہیلی کاپٹر (Helicopter) =================
+        // ================= 5. ہیلی کاپٹر =================
         function createHelicopter() {
             const heli = new THREE.Group();
             const bodyMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
@@ -524,7 +497,6 @@
             const glassMat = new THREE.MeshLambertMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.75 });
             const metalMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
 
-            // مرکزی باڈی اور کاک پٹ
             const fuselage = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.65, 3.8), bodyMat);
             fuselage.position.set(0, 1.45, 0.2);
 
@@ -535,26 +507,16 @@
             const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.26, 0.28, 3.85), stripeMat);
             stripe.position.set(0, 1.35, 0.2);
 
-            // پچھلی دم (Tail Boom)
             const tail = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.45, 4.2), bodyMat);
             tail.position.set(0, 1.75, 3.9);
 
             const tailFin = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.3, 0.7), stripeMat);
             tailFin.position.set(0, 2.2, 5.7);
 
-            // لینڈنگ اسکیڈز (Skids)
             const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 4.4).rotateX(Math.PI / 2), metalMat);
             skidL.position.set(-1.1, 0.2, -0.1);
-            const skidR = skidL.clone();
-            skidR.position.set(1.1, 0.2, -0.1);
+            const skidR = skidL.clone(); skidR.position.set(1.1, 0.2, -0.1);
 
-            const strut1 = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.65, 0.1), metalMat);
-            strut1.position.set(-1.1, 0.5, -1.0);
-            const strut2 = strut1.clone(); strut2.position.set(1.1, 0.5, -1.0);
-            const strut3 = strut1.clone(); strut3.position.set(-1.1, 0.5, 1.0);
-            const strut4 = strut1.clone(); strut4.position.set(1.1, 0.5, 1.0);
-
-            // مین روٹر پنکھے (Main Rotor)
             const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.6), metalMat);
             mast.position.set(0, 2.5, 0.1);
 
@@ -564,11 +526,10 @@
             const blade2 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 8.5), metalMat);
             mainRotor.add(blade1, blade2);
 
-            // ٹیل روٹر (Tail Rotor)
             const tailRotor = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.5, 0.22), stripeMat);
             tailRotor.position.set(0.32, 2.1, 5.7);
 
-            heli.add(fuselage, cockpit, stripe, tail, tailFin, skidL, skidR, strut1, strut2, strut3, strut4, mast, mainRotor, tailRotor);
+            heli.add(fuselage, cockpit, stripe, tail, tailFin, skidL, skidR, mast, mainRotor, tailRotor);
             return { mesh: heli, mainRotor, tailRotor };
         }
 
@@ -576,14 +537,13 @@
         helicopter.mesh.position.set(-18, 0.2, -12);
         scene.add(helicopter.mesh);
 
-        // تمام گاڑیوں کی فہرست (تاکہ ٹکراؤ اور بیٹھنے کا نظام کام کرے)
         const vehicles = [
-            { id: 'car', name: 'اسپورٹس کار', mesh: sportsCar.mesh, wheels: sportsCar.wheels, speed: 0, heading: 0, radius: 2.6, type: 'ground' },
-            { id: 'heli', name: 'ہیلی کاپٹر 🚁', mesh: helicopter.mesh, wheels: [], speed: 0, heading: 0, vy: 0, radius: 3.4, type: 'air' },
-            { id: 'fire', name: 'فائر ٹرک 🚒', mesh: fireTruck.mesh, wheels: fireTruck.wheels, speed: 0, heading: 0, radius: 3.0, type: 'ground' }
+            { id: 'car', name: 'اسپورٹس کار', mesh: sportsCar.mesh, wheels: sportsCar.wheels, speed: 0, heading: 0, radius: 2.2, type: 'ground' },
+            { id: 'heli', name: 'ہیلی کاپٹر 🚁', mesh: helicopter.mesh, wheels: [], speed: 0, heading: 0, radius: 3.0, type: 'air' },
+            { id: 'fire', name: 'فائر ٹرک 🚒', mesh: fireTruck.mesh, wheels: fireTruck.wheels, speed: 0, heading: 0, radius: 2.6, type: 'ground' }
         ];
 
-        // ================= 6. الگ الگ کردار: Usama اور Musa =================
+        // ================= 6. کردار (Usama, Musa اور شہر کے NPCs) =================
         function createTextLabel(text, bg, fg) {
             const c = document.createElement('canvas');
             c.width = 256; c.height = 64;
@@ -600,7 +560,7 @@
             return sp;
         }
 
-        function createCharacter(name, shirtColor, pantsColor, scale) {
+        function createCharacter(name, shirtColor, pantsColor, scale, withGun = true, labelText = null) {
             const grp = new THREE.Group();
             const torso = new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.72, 0.3), new THREE.MeshLambertMaterial({ color: shirtColor }));
             torso.position.y = 1.0;
@@ -619,19 +579,24 @@
             const leftArm = new THREE.Mesh(armGeo, armMat); leftArm.position.set(-0.39, 1.02, 0);
             const rightArm = new THREE.Mesh(armGeo, armMat); rightArm.position.set(0.39, 1.02, 0);
 
-            // ہاتھ میں پسٹل (Pistol)
-            const gun = new THREE.Group();
-            const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.35), new THREE.MeshLambertMaterial({ color: 0x111827 }));
-            barrel.position.set(0, -0.22, -0.18);
-            const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.1), new THREE.MeshLambertMaterial({ color: 0x374151 }));
-            grip.position.set(0, -0.32, -0.05);
-            gun.add(barrel, grip);
-            rightArm.add(gun);
+            if (withGun) {
+                const gun = new THREE.Group();
+                const barrel = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.35), new THREE.MeshLambertMaterial({ color: 0x111827 }));
+                barrel.position.set(0, -0.22, -0.18);
+                const grip = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.18, 0.1), new THREE.MeshLambertMaterial({ color: 0x374151 }));
+                grip.position.set(0, -0.32, -0.05);
+                gun.add(barrel, grip);
+                rightArm.add(gun);
+            }
 
-            const label = createTextLabel(name, 'rgba(15,23,42,0.8)', '#ffffff');
-            label.position.set(0, 2.28, 0);
+            grp.add(torso, head, hair, leftLeg, rightLeg, leftArm, rightArm);
 
-            grp.add(torso, head, hair, leftLeg, rightLeg, leftArm, rightArm, label);
+            if (labelText !== null) {
+                const label = createTextLabel(labelText, 'rgba(15,23,42,0.8)', '#ffffff');
+                label.position.set(0, 2.28, 0);
+                grp.add(label);
+            }
+
             grp.scale.set(scale, scale, scale);
             return {
                 name,
@@ -639,23 +604,33 @@
                 leftLeg, rightLeg, leftArm, rightArm,
                 inVehicle: null,
                 heading: 0,
-                walkCycle: 0
+                walkCycle: 0,
+                hp: 100
             };
         }
 
         const characters = [
-            createCharacter('Usama', 0x2563eb, 0x1e293b, 0.94),
-            createCharacter('Musa', 0xf59e0b, 0x334155, 0.86)
+            createCharacter('Usama', 0x2563eb, 0x1e293b, 0.94, true, 'Usama'),
+            createCharacter('Musa', 0xf59e0b, 0x334155, 0.86, true, 'Musa')
         ];
-
-        // شروع میں Usama اسپورٹس کار میں اور Musa باہر کھڑا ہے
         characters[0].inVehicle = vehicles[0];
-        characters[1].mesh.position.set(3.5, 0, 10);
+        characters[1].mesh.position.set(3.5, 0, 12);
         scene.add(characters[0].mesh, characters[1].mesh);
 
-        let activeCharIdx = 0; // 0 = Usama, 1 = Musa
+        // شہر میں گھومنے والے NPCs / اہداف (جن پر فائر لگے گا)
+        const npcs = [];
+        const npcColors = [0x10b981, 0xec4899, 0x8b5cf6, 0x06b6d4, 0xf97316];
+        for (let i = 0; i < 12; i++) {
+            const npc = createCharacter(`NPC-${i + 1}`, npcColors[i % npcColors.length], 0x1e293b, 0.92, false, null);
+            npc.mesh.position.set((Math.random() - 0.5) * 90, 0, (Math.random() - 0.5) * 90);
+            npc.heading = Math.random() * Math.PI * 2;
+            scene.add(npc.mesh);
+            npcs.push(npc);
+        }
 
-        // ================= 7. آگ کے شعلے (Fires to Extinguish) اور سکے =================
+        let activeCharIdx = 0;
+
+        // ================= 7. آگ، سکے، گولیاں اور پانی =================
         const fires = [];
         function spawnFire() {
             const fGroup = new THREE.Group();
@@ -665,8 +640,8 @@
             f2.position.y = 1.2;
             fGroup.add(f1, f2);
 
-            const rx = (Math.floor(Math.random() * 7) - 3) * BLOCK_STEP + 10;
-            const rz = (Math.random() - 0.5) * 320;
+            const rx = (Math.floor(Math.random() * 5) - 2) * BLOCK_STEP + 10;
+            const rz = (Math.random() - 0.5) * 180;
             fGroup.position.set(rx, 0, rz);
             scene.add(fGroup);
             fires.push({ mesh: fGroup, f1, f2, hp: 100 });
@@ -678,50 +653,49 @@
         const coinMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
         function spawnCoin() {
             const c = new THREE.Mesh(coinGeo, coinMat);
-            const rx = (Math.floor(Math.random() * 9) - 4) * BLOCK_STEP;
-            c.position.set(rx + (Math.random() - 0.5) * 8, 1.0, (Math.random() - 0.5) * 380);
+            const rx = (Math.floor(Math.random() * 7) - 3) * BLOCK_STEP;
+            c.position.set(rx + (Math.random() - 0.5) * 8, 1.0, (Math.random() - 0.5) * 200);
             scene.add(c);
             coins.push(c);
         }
         for (let i = 0; i < 25; i++) spawnCoin();
 
-        // گولیاں، پانی کے قطرے اور چنگاریاں (Projectiles & Sparks)
         const projectiles = [];
         function spawnProjectile(origin, dirVec, type) {
             const isWater = type === 'water';
             const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(isWater ? 0.28 : 0.14, 6, 6),
+                new THREE.SphereGeometry(isWater ? 0.3 : 0.18, 6, 6),
                 new THREE.MeshBasicMaterial({ color: isWater ? 0x38bdf8 : 0xfacc15 })
             );
             mesh.position.copy(origin);
             scene.add(mesh);
             projectiles.push({
                 mesh,
-                vel: dirVec.clone().multiplyScalar(isWater ? 1.1 : 2.8),
+                vel: dirVec.clone().multiplyScalar(isWater ? 1.2 : 3.2),
                 type,
-                life: isWater ? 28 : 45
+                life: isWater ? 32 : 55
             });
         }
 
-        function spawnSparks(pos) {
+        function spawnSparks(pos, color = 0xfacc15) {
             for (let i = 0; i < 8; i++) {
                 const s = new THREE.Mesh(
-                    new THREE.BoxGeometry(0.18, 0.18, 0.18),
-                    new THREE.MeshBasicMaterial({ color: 0xfacc15 })
+                    new THREE.BoxGeometry(0.22, 0.22, 0.22),
+                    new THREE.MeshBasicMaterial({ color })
                 );
                 s.position.copy(pos);
-                s.position.y += 0.8;
+                s.position.y += 1.0;
                 scene.add(s);
                 projectiles.push({
                     mesh: s,
-                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.6, Math.random() * 0.4, (Math.random() - 0.5) * 0.6),
+                    vel: new THREE.Vector3((Math.random() - 0.5) * 0.65, Math.random() * 0.45, (Math.random() - 0.5) * 0.65),
                     type: 'spark',
                     life: 18
                 });
             }
         }
 
-        // ================= 8. کنٹرولز اور بٹنز =================
+        // ================= 8. کنٹرولز =================
         let camMode = 0;
         let score = 0;
         let firesPutOut = 0;
@@ -746,25 +720,22 @@
         bindHold('btn-nitro', 'nitro');
         bindHold('btn-sprint', 'sprint');
 
-        // پسٹل فائر بٹن
         document.getElementById('btn-shoot').addEventListener('click', () => {
             initAudio();
             const ch = characters[activeCharIdx];
             if (ch.inVehicle) return;
             const forward = new THREE.Vector3(-Math.sin(ch.heading), 0, -Math.cos(ch.heading));
-            const muzzle = ch.mesh.position.clone().add(new THREE.Vector3(0, 1.15, 0)).add(forward.clone().multiplyScalar(0.8));
+            const muzzle = ch.mesh.position.clone().add(new THREE.Vector3(0, 1.15, 0)).add(forward.clone().multiplyScalar(0.9));
             spawnProjectile(muzzle, forward, 'bullet');
-            playSound(520, 110, 0.12, 'sawtooth', 0.2);
+            playSound(520, 110, 0.12, 'sawtooth', 0.22);
         });
 
-        // آگ بجھانے والا پانی بٹن
         const waterBtn = document.getElementById('btn-water');
         waterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); sprayingWater = true; });
         waterBtn.addEventListener('touchend', (e) => { e.preventDefault(); sprayingWater = false; });
         waterBtn.addEventListener('mousedown', () => { initAudio(); sprayingWater = true; });
         waterBtn.addEventListener('mouseup', () => { sprayingWater = false; });
 
-        // کردار تبدیل کرنے والا بٹن (Usama <-> Musa)
         document.getElementById('btn-switch').addEventListener('click', () => {
             initAudio();
             activeCharIdx = activeCharIdx === 0 ? 1 : 0;
@@ -773,27 +744,24 @@
             updateHUD();
         });
 
-        // گاڑی یا ہیلی کاپٹر میں بیٹھنے / نکلنے والا بٹن
         document.getElementById('btn-enter').addEventListener('click', () => {
             initAudio();
             const ch = characters[activeCharIdx];
             if (ch.inVehicle) {
-                // اگر ہیلی کاپٹر ہوا میں ہے تو پہلے نیچے اتاریں
                 if (ch.inVehicle.type === 'air' && ch.inVehicle.mesh.position.y > 1.5) {
                     alert('پہلے ▼ بٹن دبا کر ہیلی کاپٹر کو زمین پر اتاریں!');
                     return;
                 }
                 const v = ch.inVehicle;
-                const exitPos = new THREE.Vector3(3.0, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), v.heading);
+                const exitPos = new THREE.Vector3(3.2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), v.heading);
                 ch.mesh.position.copy(v.mesh.position).add(exitPos);
                 ch.mesh.position.y = 0;
                 ch.heading = v.heading;
                 ch.inVehicle = null;
                 v.speed = 0;
             } else {
-                // قریبی گاڑی یا ہیلی کاپٹر تلاش کریں
                 let nearest = null;
-                let minDist = 8.5;
+                let minDist = 10.0;
                 for (let v of vehicles) {
                     const d = ch.mesh.position.distanceTo(v.mesh.position);
                     if (d < minDist) {
@@ -822,7 +790,7 @@
             if (ch.inVehicle) {
                 footBar.style.display = 'none';
                 enterBtn.innerText = '🚶 باہر نکلیں (Exit)';
-                vStatus.innerText = ` سوار: ${ch.inVehicle.name}`;
+                vStatus.innerText = `سوار: ${ch.inVehicle.name}`;
             } else {
                 footBar.style.display = 'flex';
                 enterBtn.innerText = '🚗 گاڑی/ہیلی میں بیٹھیں';
@@ -831,7 +799,6 @@
         }
         updateHUD();
 
-        // کی بورڈ سپورٹ
         window.addEventListener('keydown', (e) => {
             initAudio();
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
@@ -850,40 +817,18 @@
             if (e.key === ' ') keys.nitro = false;
         });
 
-        // ================= 9. ٹکراؤ چیک کرنے والا فنکشن (Collision Physics) =================
-        function checkCollision(x, z, radius, ignoreMesh = null) {
-            // عمارتوں سے ٹکراؤ
+        // ================= 9. درست ٹکراؤ چیک =================
+        function hitBuildingOrVehicle(x, z, radius, ignoreMesh = null) {
             for (let b of buildings) {
-                if (Math.abs(x - b.x) < (b.hw + radius * 0.4) && Math.abs(z - b.z) < (b.hd + radius * 0.4)) {
+                if (Math.abs(x - b.x) < (b.hw + radius * 0.25) && Math.abs(z - b.z) < (b.hd + radius * 0.25)) {
                     return true;
                 }
             }
-            // دوسری گاڑیوں سے ٹکراؤ
             for (let v of vehicles) {
                 if (v.mesh === ignoreMesh) continue;
-                if (v.type === 'air' && v.mesh.position.y > 2.5) continue;
-                const dx = x - v.mesh.position.x;
-                const dz = z - v.mesh.position.z;
-                if (Math.hypot(dx, dz) < (radius + v.radius)) {
-                    return true;
-                }
-            }
-            // ٹریفک گاڑیوں سے ٹکراؤ
-            for (let tc of trafficCars) {
-                if (tc.mesh === ignoreMesh) continue;
-                const dx = x - tc.mesh.position.x;
-                const dz = z - tc.mesh.position.z;
-                if (Math.hypot(dx, dz) < (radius + 2.4)) {
-                    return true;
-                }
-            }
-            // پولیس کار سے ٹکراؤ
-            if (policeCar.mesh !== ignoreMesh) {
-                const dx = x - policeCar.mesh.position.x;
-                const dz = z - policeCar.mesh.position.z;
-                if (Math.hypot(dx, dz) < (radius + 2.4)) {
-                    return true;
-                }
+                if (v.type === 'air' && v.mesh.position.y > 2.2) continue;
+                const d = Math.hypot(x - v.mesh.position.x, z - v.mesh.position.z);
+                if (d < (radius + v.radius * 0.65)) return true;
             }
             return false;
         }
@@ -896,7 +841,6 @@
             mCtx.fillRect(0, 0, 110, 110);
             const sc = 0.24, cx = 55, cy = 55;
 
-            // آگ (Fires)
             mCtx.fillStyle = '#f97316';
             for (let f of fires) {
                 const dx = (f.mesh.position.x - centerPos.x) * sc;
@@ -906,76 +850,74 @@
                 }
             }
 
-            // ہیلی کاپٹر
-            mCtx.fillStyle = '#a855f7';
-            const hdx = (helicopter.mesh.position.x - centerPos.x) * sc;
-            const hdz = (helicopter.mesh.position.z - centerPos.z) * sc;
-            mCtx.fillRect(cx + hdx - 3, cy + hdz - 3, 6, 6);
+            mCtx.fillStyle = '#ef4444';
+            for (let npc of npcs) {
+                const dx = (npc.mesh.position.x - centerPos.x) * sc;
+                const dz = (npc.mesh.position.z - centerPos.z) * sc;
+                if (Math.abs(dx) < 52 && Math.abs(dz) < 52) {
+                    mCtx.beginPath(); mCtx.arc(cx + dx, cy + dz, 2.5, 0, Math.PI * 2); mCtx.fill();
+                }
+            }
 
-            // دوسرا کردار
-            const other = characters[activeCharIdx === 0 ? 1 : 0];
-            mCtx.fillStyle = '#4ade80';
-            const odx = (other.mesh.position.x - centerPos.x) * sc;
-            const odz = (other.mesh.position.z - centerPos.z) * sc;
-            mCtx.beginPath(); mCtx.arc(cx + odx, cy + odz, 3.2, 0, Math.PI * 2); mCtx.fill();
-
-            // فعال کھلاڑی
             mCtx.fillStyle = '#38bdf8';
             mCtx.beginPath(); mCtx.arc(cx, cy, 4.2, 0, Math.PI * 2); mCtx.fill();
         }
 
-        // ================= 10. مین گیم لوپ =================
+        // ================= 10. مین لوپ =================
         let tick = 0;
 
         function animate() {
             requestAnimationFrame(animate);
             tick += 0.02;
 
-            // پولیس سائرن
             sirenR.visible = Math.floor(tick * 6) % 2 === 0;
             sirenB.visible = !sirenR.visible;
 
-            // آگ کے شعلوں کی حرکت
             for (let f of fires) {
                 f.f1.scale.y = 0.85 + Math.sin(tick * 10) * 0.25;
                 f.f2.rotation.y += 0.1;
             }
 
-            // ٹریفک گاڑیاں (ٹکراؤ کے ساتھ)
+            // ٹریفک گاڑیاں
             for (let tc of trafficCars) {
-                const nextZ = tc.mesh.position.z + tc.speed;
-                if (!checkCollision(tc.mesh.position.x, nextZ, 2.3, tc.mesh)) {
-                    tc.mesh.position.z = nextZ > 240 ? -240 : nextZ;
-                    tc.wheels.forEach(w => { w.rotation.x += tc.speed * 0.6; });
-                }
+                tc.mesh.position.z += tc.speed;
+                if (tc.mesh.position.z > 220) tc.mesh.position.z = -220;
+                tc.wheels.forEach(w => { w.rotation.x += tc.speed * 0.65; });
+            }
+
+            // NPCs کی حرکت
+            for (let npc of npcs) {
+                npc.walkCycle += 0.15;
+                npc.mesh.position.x -= Math.sin(npc.heading) * 0.07;
+                npc.mesh.position.z -= Math.cos(npc.heading) * 0.07;
+                npc.mesh.rotation.y = npc.heading + Math.PI;
+                npc.leftLeg.rotation.x = Math.sin(npc.walkCycle) * 0.4;
+                npc.rightLeg.rotation.x = -Math.sin(npc.walkCycle) * 0.4;
+                if (Math.random() < 0.01) npc.heading += (Math.random() - 0.5) * 1.5;
             }
 
             const activeChar = characters[activeCharIdx];
             const otherChar = characters[activeCharIdx === 0 ? 1 : 0];
 
-            // --- فعال کردار یا گاڑی کا کنٹرول ---
             if (activeChar.inVehicle) {
                 const v = activeChar.inVehicle;
 
                 if (v.type === 'air') {
-                    // ہیلی کاپٹر اڑانا
-                    helicopter.mainRotor.rotation.y += 0.45;
-                    helicopter.tailRotor.rotation.x += 0.55;
+                    helicopter.mainRotor.rotation.y += 0.48;
+                    helicopter.tailRotor.rotation.x += 0.58;
 
-                    if (keys.gas) v.mesh.position.y = Math.min(45, v.mesh.position.y + 0.28);
-                    if (keys.brake) v.mesh.position.y = Math.max(0.2, v.mesh.position.y - 0.25);
+                    if (keys.gas) v.mesh.position.y = Math.min(45, v.mesh.position.y + 0.3);
+                    if (keys.brake) v.mesh.position.y = Math.max(0.2, v.mesh.position.y - 0.28);
 
                     if (v.mesh.position.y > 0.6) {
-                        if (keys.left) v.heading += 0.035;
-                        if (keys.right) v.heading -= 0.035;
-                        if (keys.nitro) {
-                            v.speed = Math.min(1.15, v.speed + 0.04);
-                        } else {
-                            v.speed *= 0.96;
-                        }
+                        if (keys.left) v.heading += 0.038;
+                        if (keys.right) v.heading -= 0.038;
+                        if (keys.nitro) v.speed = Math.min(1.2, v.speed + 0.045);
+                        else v.speed *= 0.96;
+
                         v.mesh.position.x -= Math.sin(v.heading) * v.speed;
                         v.mesh.position.z -= Math.cos(v.heading) * v.speed;
-                        v.mesh.rotation.x = -v.speed * 0.22; // آگے جھکاؤ
+                        v.mesh.rotation.x = -v.speed * 0.2;
                     } else {
                         v.speed = 0;
                         v.mesh.rotation.x = 0;
@@ -983,31 +925,29 @@
                     v.mesh.rotation.y = v.heading;
                     document.getElementById('speed-num').innerText = Math.round(v.speed * 160);
                 } else {
-                    // زمین پر گاڑی چلانا (اسپورٹس کار یا فائر ٹرک)
-                    const maxSpd = keys.nitro ? 1.35 : 0.92;
-                    const acc = keys.nitro ? 0.04 : 0.024;
+                    const maxSpd = keys.nitro ? 1.35 : 0.95;
+                    const acc = keys.nitro ? 0.045 : 0.028;
                     if (keys.gas) v.speed += acc;
-                    if (keys.brake) v.speed -= 0.032;
-                    v.speed = Math.max(-0.45, Math.min(maxSpd, v.speed));
-                    v.speed *= 0.96;
+                    if (keys.brake) v.speed -= 0.035;
+                    v.speed = Math.max(-0.48, Math.min(maxSpd, v.speed));
+                    v.speed *= 0.965;
 
-                    if (Math.abs(v.speed) > 0.02) {
+                    if (Math.abs(v.speed) > 0.015) {
                         const dir = v.speed > 0 ? 1 : -1;
-                        if (keys.left) v.heading += 0.042 * dir;
-                        if (keys.right) v.heading -= 0.042 * dir;
+                        if (keys.left) v.heading += 0.045 * dir;
+                        if (keys.right) v.heading -= 0.045 * dir;
                     }
 
                     const nextX = v.mesh.position.x - Math.sin(v.heading) * v.speed;
                     const nextZ = v.mesh.position.z - Math.cos(v.heading) * v.speed;
 
-                    if (!checkCollision(nextX, nextZ, v.radius, v.mesh)) {
+                    if (!hitBuildingOrVehicle(nextX, nextZ, v.radius, v.mesh)) {
                         v.mesh.position.x = nextX;
                         v.mesh.position.z = nextZ;
                     } else {
-                        // ٹکرانے پر رک کر پیچھے اچھلنا اور چنگاریاں نکلنا
-                        if (Math.abs(v.speed) > 0.15) {
-                            spawnSparks(v.mesh.position);
-                            playSound(130, 35, 0.22, 'triangle', 0.25);
+                        if (Math.abs(v.speed) > 0.12) {
+                            spawnSparks(v.mesh.position, 0xfacc15);
+                            playSound(130, 35, 0.2, 'triangle', 0.22);
                         }
                         v.speed = -v.speed * 0.5;
                     }
@@ -1017,26 +957,25 @@
                     document.getElementById('speed-num').innerText = Math.round(Math.abs(v.speed) * 145);
                 }
             } else {
-                // پیدل چلنا اور دوڑنا (Sprint)
-                const moveSpd = keys.sprint ? 0.42 : 0.22;
+                const moveSpd = keys.sprint ? 0.45 : 0.24;
                 let spd = 0;
                 if (keys.gas) spd = moveSpd;
-                if (keys.brake) spd = -0.15;
-                if (keys.left) activeChar.heading += 0.05;
-                if (keys.right) activeChar.heading -= 0.05;
+                if (keys.brake) spd = -0.16;
+                if (keys.left) activeChar.heading += 0.052;
+                if (keys.right) activeChar.heading -= 0.052;
 
                 const nx = activeChar.mesh.position.x - Math.sin(activeChar.heading) * spd;
                 const nz = activeChar.mesh.position.z - Math.cos(activeChar.heading) * spd;
 
-                if (!checkCollision(nx, nz, 0.7)) {
+                if (!hitBuildingOrVehicle(nx, nz, 0.5)) {
                     activeChar.mesh.position.x = nx;
                     activeChar.mesh.position.z = nz;
                 }
                 activeChar.mesh.rotation.y = activeChar.heading + Math.PI;
 
                 if (Math.abs(spd) > 0.01) {
-                    activeChar.walkCycle += keys.sprint ? 0.38 : 0.24;
-                    const sw = Math.sin(activeChar.walkCycle) * (keys.sprint ? 0.75 : 0.5);
+                    activeChar.walkCycle += keys.sprint ? 0.4 : 0.25;
+                    const sw = Math.sin(activeChar.walkCycle) * (keys.sprint ? 0.78 : 0.52);
                     activeChar.leftLeg.rotation.x = sw;
                     activeChar.rightLeg.rotation.x = -sw;
                     activeChar.leftArm.rotation.x = -sw * 0.6;
@@ -1046,17 +985,16 @@
                     activeChar.leftArm.rotation.x = activeChar.rightArm.rotation.x = 0;
                 }
 
-                // پانی کی پھوار (آگ بجھانے کے لیے)
                 if (sprayingWater) {
                     const fwd = new THREE.Vector3(-Math.sin(activeChar.heading), 0, -Math.cos(activeChar.heading));
-                    const nozzle = activeChar.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0)).add(fwd.clone().multiplyScalar(0.7));
+                    const nozzle = activeChar.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0)).add(fwd.clone().multiplyScalar(0.8));
                     spawnProjectile(nozzle, fwd, 'water');
                 }
 
-                document.getElementById('speed-num').innerText = Math.round(Math.abs(spd) * 40);
+                document.getElementById('speed-num').innerText = Math.round(Math.abs(spd) * 42);
             }
 
-            // دونوں کرداروں کی پوزیشن اپ ڈیٹ (اگر گاڑی میں ہوں تو سیٹ پر بٹھائیں)
+            // گاڑی میں بیٹھے کردار کی سیٹ
             characters.forEach((ch, idx) => {
                 if (ch.inVehicle) {
                     const v = ch.inVehicle;
@@ -1068,39 +1006,16 @@
                 }
             });
 
-            // اگر دوسرا کردار پیدل ہو اور بہت دور ہو تو آہستہ آہستہ قریب آئے
-            if (!otherChar.inVehicle) {
-                const targetPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
-                const diff = new THREE.Vector3().subVectors(targetPos, otherChar.mesh.position);
-                diff.y = 0;
-                if (diff.length() > 6 && diff.length() < 60) {
-                    diff.normalize();
-                    const ox = otherChar.mesh.position.x + diff.x * 0.16;
-                    const oz = otherChar.mesh.position.z + diff.z * 0.16;
-                    if (!checkCollision(ox, oz, 0.7)) {
-                        otherChar.mesh.position.x = ox;
-                        otherChar.mesh.position.z = oz;
-                        otherChar.mesh.rotation.y = Math.atan2(-diff.x, -diff.z) + Math.PI;
-                        otherChar.walkCycle += 0.22;
-                        otherChar.leftLeg.rotation.x = Math.sin(otherChar.walkCycle) * 0.45;
-                        otherChar.rightLeg.rotation.x = -Math.sin(otherChar.walkCycle) * 0.45;
-                    }
-                } else {
-                    otherChar.leftLeg.rotation.x = otherChar.rightLeg.rotation.x = 0;
-                }
-            }
-
-            // گولیاں اور پانی اپ ڈیٹ کرنا
+            // گولیاں اور پانی
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
                 p.mesh.position.add(p.vel);
                 p.life--;
 
                 if (p.type === 'water') {
-                    // آگ بجھانا چیک کریں
                     for (let j = fires.length - 1; j >= 0; j--) {
-                        if (p.mesh.position.distanceTo(fires[j].mesh.position) < 2.8) {
-                            fires[j].hp -= 6;
+                        if (p.mesh.position.distanceTo(fires[j].mesh.position) < 3.0) {
+                            fires[j].hp -= 8;
                             fires[j].mesh.scale.setScalar(Math.max(0.2, fires[j].hp / 100));
                             if (fires[j].hp <= 0) {
                                 scene.remove(fires[j].mesh);
@@ -1115,9 +1030,26 @@
                         }
                     }
                 } else if (p.type === 'bullet') {
-                    // گولی کسی گاڑی یا عمارت سے ٹکرائے تو چنگاری نکلے
-                    if (checkCollision(p.mesh.position.x, p.mesh.position.z, 0.2)) {
-                        spawnSparks(p.mesh.position);
+                    // چیک کریں کہ گولی کسی NPC یا دوسرے کردار کو لگی یا نہیں
+                    let hitTarget = false;
+                    for (let k = npcs.length - 1; k >= 0; k--) {
+                        const dx = p.mesh.position.x - npcs[k].mesh.position.x;
+                        const dz = p.mesh.position.z - npcs[k].mesh.position.z;
+                        if (Math.hypot(dx, dz) < 1.35) {
+                            spawnSparks(npcs[k].mesh.position, 0xef4444);
+                            score += 25;
+                            document.getElementById('score').innerText = score;
+                            playSound(240, 80, 0.18, 'square', 0.2);
+                            // NPC کو گرانا / نئی جگہ بھیجنا
+                            npcs[k].mesh.position.set((Math.random() - 0.5) * 120, 0, (Math.random() - 0.5) * 120);
+                            hitTarget = true;
+                            p.life = 0;
+                            break;
+                        }
+                    }
+
+                    if (!hitTarget && hitBuildingOrVehicle(p.mesh.position.x, p.mesh.position.z, 0.2)) {
+                        spawnSparks(p.mesh.position, 0xfacc15);
                         p.life = 0;
                     }
                 }
@@ -1128,7 +1060,7 @@
                 }
             }
 
-            // سکے جمع کرنا
+            // سکے
             const focusPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
             const focusHeading = activeChar.inVehicle ? activeChar.inVehicle.heading : activeChar.heading;
 
@@ -1144,7 +1076,7 @@
                 }
             }
 
-            // کیمرہ فالو
+            // کیمرہ
             let camOff;
             if (!activeChar.inVehicle) camOff = new THREE.Vector3(0, 3.8, 7.2);
             else if (activeChar.inVehicle.type === 'air') camOff = new THREE.Vector3(0, 7.5, 16);

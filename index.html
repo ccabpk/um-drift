@@ -23,9 +23,10 @@
             align-items: flex-start;
             z-index: 20;
             pointer-events: none;
+            gap: 8px;
         }
         .hud-panel {
-            background: rgba(15, 23, 42, 0.84);
+            background: rgba(15, 23, 42, 0.86);
             border: 1px solid rgba(255, 255, 255, 0.22);
             border-radius: 12px;
             padding: 8px 12px;
@@ -33,19 +34,22 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.45);
         }
         #title-badge {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 900;
             color: #facc15;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.6px;
         }
         #stats-row {
             display: flex;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-top: 3px;
-            font-size: 12px;
+            font-size: 11px;
             color: #e2e8f0;
         }
         .stat-val { color: #38bdf8; font-weight: bold; }
+        .gold-val { color: #facc15; font-weight: bold; }
+        .hp-val { color: #4ade80; font-weight: bold; }
         #active-char-badge {
             font-size: 13px;
             font-weight: 800;
@@ -55,6 +59,71 @@
             font-size: 11px;
             color: #facc15;
             margin-top: 2px;
+        }
+
+        #stage-banner {
+            position: absolute;
+            top: 24%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(15, 23, 42, 0.92);
+            border: 2px solid #facc15;
+            color: #facc15;
+            padding: 10px 22px;
+            border-radius: 14px;
+            font-size: 18px;
+            font-weight: 900;
+            z-index: 35;
+            display: none;
+            pointer-events: none;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+        }
+
+        #game-over-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.88);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            color: #fff;
+            text-align: center;
+            padding: 20px;
+        }
+        #game-over-box {
+            background: rgba(15, 23, 42, 0.96);
+            border: 2px solid #ef4444;
+            border-radius: 18px;
+            padding: 24px 28px;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.75);
+        }
+        #go-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #f87171;
+            margin-bottom: 10px;
+        }
+        .go-line {
+            font-size: 14px;
+            margin: 6px 0;
+            color: #e2e8f0;
+        }
+        #btn-restart {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            background: #22c55e;
+            color: #052e16;
+            font-size: 15px;
+            font-weight: 900;
+            cursor: pointer;
         }
 
         #minimap-wrap {
@@ -91,7 +160,7 @@
 
         #action-bar {
             position: absolute;
-            top: 74px;
+            top: 84px;
             right: 10px;
             display: flex;
             flex-direction: column;
@@ -192,9 +261,11 @@
 
     <div id="hud-top">
         <div class="hud-panel">
-            <div id="title-badge">UM DRIFT 3D</div>
+            <div id="title-badge">UM DRIFT 3D • اسٹیج <span id="stage-num">1</span>/20</div>
             <div id="stats-row">
-                <div>سکور: <span class="stat-val" id="score">0</span></div>
+                <div>سکور: <span class="stat-val" id="score">0</span>/<span class="stat-val" id="stage-target">250</span></div>
+                <div>ہائی سکور: <span class="gold-val" id="high-score">0</span></div>
+                <div>ہیلتھ: <span class="hp-val" id="hp-val">100</span></div>
                 <div>شکار: <span class="stat-val" id="kills">0</span></div>
                 <div>آگ: <span class="stat-val" id="fires-put">0</span></div>
             </div>
@@ -202,6 +273,19 @@
         <div class="hud-panel" style="text-align: right;">
             <div id="active-char-badge">کردار: Usama</div>
             <div id="vehicle-status">🚗 اسپورٹس کار میں</div>
+        </div>
+    </div>
+
+    <div id="stage-banner"></div>
+
+    <div id="game-over-modal">
+        <div id="game-over-box">
+            <div id="go-title">💀 گیم اوور</div>
+            <div class="go-line" id="go-reason">آپ کی ہیلتھ ختم ہو گئی!</div>
+            <div class="go-line">اسٹیج: <strong id="go-stage">1</strong> / 20</div>
+            <div class="go-line">سکور: <strong id="go-score">0</strong></div>
+            <div class="go-line">ہائی سکور: <strong id="go-high">0</strong></div>
+            <button id="btn-restart">🔄 دوبارہ کھیلیں</button>
         </div>
     </div>
 
@@ -502,11 +586,13 @@
                 bodyMat: tc.bodyMat,
                 dmgFlame: tc.dmgFlame,
                 origColor: tc.origColor,
-                speed: 0.22,
-                radius: 2.2,
+                baseSpeed: 0.24,
+                speed: 0.24,
+                radius: 2.3,
                 hp: 60,
                 maxHp: 60,
-                destroyed: false
+                destroyed: false,
+                stopTimer: 0
             });
         }
 
@@ -653,12 +739,77 @@
 
         let activeCharIdx = 0;
 
-        // ================= 7. آگ، سکے، گولیاں اور پانی =================
-        let camMode = 0;
+        // ================= 7. اسٹیجز، ہائی سکور، گیم اوور، آگ، سکے، گولیاں اور پانی =================
+        const MAX_STAGES = 20;
+        let currentStage = 1;
+        let stageTargetScore = 250;
         let score = 0;
+        let highScore = Number(localStorage.getItem('um_drift_high_score') || 0);
+        let playerHp = 100;
+        let isGameOver = false;
+        let camMode = 0;
         let kills = 0;
         let firesPutOut = 0;
         let sprayingWater = false;
+
+        function updateScoreHUD() {
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('um_drift_high_score', String(highScore));
+            }
+            document.getElementById('stage-num').innerText = currentStage;
+            document.getElementById('stage-target').innerText = stageTargetScore;
+            document.getElementById('score').innerText = score;
+            document.getElementById('high-score').innerText = highScore;
+            document.getElementById('hp-val').innerText = Math.max(0, Math.round(playerHp));
+            document.getElementById('kills').innerText = kills;
+            document.getElementById('fires-put').innerText = firesPutOut;
+
+            if (!isGameOver && score >= stageTargetScore) {
+                if (currentStage < MAX_STAGES) {
+                    currentStage++;
+                    stageTargetScore += 250;
+                    playerHp = Math.min(100, playerHp + 25);
+                    showStageBanner(`🎉 اسٹیج ${currentStage - 1} کلیئر! اسٹیج ${currentStage} شروع`);
+                    playSound(523, 1046, 0.35, 'triangle', 0.25);
+                    updateScoreHUD();
+                } else {
+                    showStageBanner(`🏆 مبارک ہو! تمام 20 اسٹیجز کلیئر ہو گئیں!`);
+                    playSound(659, 1318, 0.5, 'triangle', 0.3);
+                }
+            }
+        }
+
+        let bannerTimer = null;
+        function showStageBanner(text) {
+            const el = document.getElementById('stage-banner');
+            el.innerText = text;
+            el.style.display = 'block';
+            clearTimeout(bannerTimer);
+            bannerTimer = setTimeout(() => { el.style.display = 'none'; }, 2400);
+        }
+
+        function triggerGameOver(reasonText) {
+            if (isGameOver) return;
+            isGameOver = true;
+            sprayingWater = false;
+            Object.keys(keys).forEach(k => keys[k] = false);
+            document.getElementById('go-reason').innerText = reasonText;
+            document.getElementById('go-stage').innerText = currentStage;
+            document.getElementById('go-score').innerText = score;
+            document.getElementById('go-high').innerText = highScore;
+            document.getElementById('game-over-modal').style.display = 'flex';
+            playSound(190, 45, 0.5, 'sawtooth', 0.3);
+        }
+
+        function damagePlayer(dmg, reason = 'آپ کی ہیلتھ ختم ہو گئی!') {
+            if (isGameOver) return;
+            playerHp -= dmg;
+            updateScoreHUD();
+            if (playerHp <= 0) {
+                triggerGameOver(reason);
+            }
+        }
 
         const fires = [];
         function spawnFire(customPos = null) {
@@ -677,7 +828,7 @@
                 fGroup.position.set(rx, 0, rz);
             }
             scene.add(fGroup);
-            fires.push({ mesh: fGroup, f1, f2, hp: 100 });
+            fires.push({ mesh: fGroup, f1, f2, hp: 60, maxHp: 60 });
         }
         for (let i = 0; i < 6; i++) spawnFire();
 
@@ -697,16 +848,16 @@
         function spawnProjectile(origin, dirVec, type) {
             const isWater = type === 'water';
             const mesh = new THREE.Mesh(
-                new THREE.SphereGeometry(isWater ? 0.32 : 0.28, 6, 6),
+                new THREE.SphereGeometry(isWater ? 0.36 : 0.28, 6, 6),
                 new THREE.MeshBasicMaterial({ color: isWater ? 0x38bdf8 : 0xfacc15 })
             );
             mesh.position.copy(origin);
             scene.add(mesh);
             projectiles.push({
                 mesh,
-                vel: dirVec.clone().multiplyScalar(isWater ? 1.2 : 2.8),
+                vel: dirVec.clone().multiplyScalar(isWater ? 1.15 : 2.8),
                 type,
-                life: isWater ? 32 : 65
+                life: isWater ? 38 : 65
             });
         }
 
@@ -736,8 +887,7 @@
             npc.mesh.position.y = 0.25;
             kills++;
             score += 30;
-            document.getElementById('kills').innerText = kills;
-            document.getElementById('score').innerText = score;
+            updateScoreHUD();
         }
 
         function repairAndPlaceVehicle(v, targetPos) {
@@ -773,7 +923,7 @@
                 spawnSparks(v.mesh.position, 0xef4444, 18);
                 spawnFire(v.mesh.position);
                 score += 100;
-                document.getElementById('score').innerText = score;
+                updateScoreHUD();
                 playSound(140, 28, 0.45, 'sawtooth', 0.3);
             }
         }
@@ -783,7 +933,7 @@
 
         function bindHold(id, key) {
             const el = document.getElementById(id);
-            const on = (e) => { e.preventDefault(); initAudio(); keys[key] = true; el.classList.add('active'); };
+            const on = (e) => { e.preventDefault(); if (isGameOver) return; initAudio(); keys[key] = true; el.classList.add('active'); };
             const off = (e) => { e.preventDefault(); keys[key] = false; el.classList.remove('active'); };
             el.addEventListener('touchstart', on);
             el.addEventListener('touchend', off);
@@ -799,6 +949,7 @@
         bindHold('btn-sprint', 'sprint');
 
         document.getElementById('btn-shoot').addEventListener('click', () => {
+            if (isGameOver) return;
             initAudio();
             const ch = characters[activeCharIdx];
             if (ch.inVehicle) return;
@@ -809,12 +960,13 @@
         });
 
         const waterBtn = document.getElementById('btn-water');
-        waterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); initAudio(); sprayingWater = true; });
+        waterBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if (isGameOver) return; initAudio(); sprayingWater = true; });
         waterBtn.addEventListener('touchend', (e) => { e.preventDefault(); sprayingWater = false; });
-        waterBtn.addEventListener('mousedown', () => { initAudio(); sprayingWater = true; });
+        waterBtn.addEventListener('mousedown', () => { if (isGameOver) return; initAudio(); sprayingWater = true; });
         waterBtn.addEventListener('mouseup', () => { sprayingWater = false; });
 
         document.getElementById('btn-switch').addEventListener('click', () => {
+            if (isGameOver) return;
             initAudio();
             activeCharIdx = activeCharIdx === 0 ? 1 : 0;
             const nextChar = characters[activeCharIdx === 0 ? 1 : 0];
@@ -823,6 +975,7 @@
         });
 
         document.getElementById('btn-enter').addEventListener('click', () => {
+            if (isGameOver) return;
             initAudio();
             const ch = characters[activeCharIdx];
             if (ch.inVehicle) {
@@ -862,6 +1015,7 @@
         });
 
         document.getElementById('btn-reset').addEventListener('click', () => {
+            if (isGameOver) return;
             initAudio();
             const ch = characters[activeCharIdx];
             if (ch.inVehicle) {
@@ -882,6 +1036,26 @@
             playSound(440, 880, 0.18, 'sine', 0.16);
         });
 
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            initAudio();
+            isGameOver = false;
+            currentStage = 1;
+            stageTargetScore = 250;
+            score = 0;
+            kills = 0;
+            firesPutOut = 0;
+            playerHp = 100;
+            document.getElementById('game-over-modal').style.display = 'none';
+            repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
+            characters[0].inVehicle = vehicles[0];
+            characters[1].inVehicle = null;
+            characters[1].mesh.position.set(3.5, 0, 12);
+            activeCharIdx = 0;
+            document.getElementById('btn-switch').innerText = '🔄 کردار بدلیں (Musa)';
+            updateHUD();
+            updateScoreHUD();
+        });
+
         function updateHUD() {
             const ch = characters[activeCharIdx];
             document.getElementById('active-char-badge').innerText = `کردار: ${ch.name}`;
@@ -900,8 +1074,10 @@
             }
         }
         updateHUD();
+        updateScoreHUD();
 
         window.addEventListener('keydown', (e) => {
+            if (isGameOver) return;
             initAudio();
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
             if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
@@ -919,38 +1095,35 @@
             if (e.key === ' ') keys.nitro = false;
         });
 
-        // ================= 9. مکمل ٹکراؤ چیک (عمارتیں، کھڑی گاڑیاں، ٹریفک گاڑیاں اور بندے) =================
+        // ================= 9. مکمل ٹکراؤ چیک =================
         function checkCarCollision(x, z, radius, ignoreMesh = null, carSpeed = 0) {
-            // 1. عمارتیں
             for (let b of buildings) {
                 if (Math.abs(x - b.x) < (b.hw + radius * 0.4) && Math.abs(z - b.z) < (b.hd + radius * 0.4)) {
                     return { hit: true, type: 'building' };
                 }
             }
-            // 2. کھڑی گاڑیاں / ہیلی کاپٹر
             for (let v of vehicles) {
                 if (v.mesh === ignoreMesh) continue;
                 if (v.type === 'air' && v.mesh.position.y > 2.2) continue;
                 const d = Math.hypot(x - v.mesh.position.x, z - v.mesh.position.z);
-                if (d < (radius + v.radius * 0.85)) {
-                    damageVehicle(v, Math.max(10, Math.abs(carSpeed) * 20));
+                if (d < (radius + v.radius * 0.9)) {
+                    damageVehicle(v, Math.max(12, Math.abs(carSpeed) * 22));
                     return { hit: true, type: 'vehicle' };
                 }
             }
-            // 3. ٹریفک گاڑیاں
             for (let tc of trafficCars) {
                 if (tc.mesh === ignoreMesh) continue;
                 const d = Math.hypot(x - tc.mesh.position.x, z - tc.mesh.position.z);
-                if (d < (radius + tc.radius * 0.85)) {
-                    damageVehicle(tc, Math.max(15, Math.abs(carSpeed) * 25));
+                if (d < (radius + tc.radius * 0.9)) {
+                    damageVehicle(tc, Math.max(15, Math.abs(carSpeed) * 26));
+                    tc.stopTimer = 35;
                     return { hit: true, type: 'traffic' };
                 }
             }
-            // 4. بندے (NPCs) - گاڑی ٹکرانے پر بندے گر کر مرتے ہیں اور گاڑی نہیں رکتی
             for (let npc of npcs) {
                 if (npc.dead) continue;
                 const d = Math.hypot(x - npc.mesh.position.x, z - npc.mesh.position.z);
-                if (d < radius + 0.9 && Math.abs(carSpeed) > 0.08) {
+                if (d < radius + 0.95 && Math.abs(carSpeed) > 0.06) {
                     spawnSparks(npc.mesh.position, 0xef4444, 6);
                     playSound(220, 70, 0.16, 'square', 0.22);
                     killNpc(npc);
@@ -969,12 +1142,12 @@
                 if (v.mesh === ignoreMesh) continue;
                 if (v.type === 'air' && v.mesh.position.y > 2.2) continue;
                 const d = Math.hypot(x - v.mesh.position.x, z - v.mesh.position.z);
-                if (d < (radius + v.radius * 0.75)) return true;
+                if (d < (radius + v.radius * 0.78)) return true;
             }
             for (let tc of trafficCars) {
                 if (tc.mesh === ignoreMesh) continue;
                 const d = Math.hypot(x - tc.mesh.position.x, z - tc.mesh.position.z);
-                if (d < (radius + tc.radius * 0.75)) return true;
+                if (d < (radius + tc.radius * 0.78)) return true;
             }
             return false;
         }
@@ -1040,14 +1213,75 @@
                 f.f2.rotation.y += 0.1;
             }
 
-            for (let tc of trafficCars) {
+            const activeChar = characters[activeCharIdx];
+            const playerPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
+
+            // ٹریفک گاڑیاں (آپس میں، گاڑیوں سے اور بندوں سے ٹکراؤ + رکنا)
+            for (let i = 0; i < trafficCars.length; i++) {
+                const tc = trafficCars[i];
                 if (tc.destroyed) {
                     if (tc.dmgFlame) tc.dmgFlame.scale.y = 1.4 + Math.sin(tick * 12) * 0.3;
                     continue;
                 }
-                tc.mesh.position.z += tc.speed;
-                if (tc.mesh.position.z > 220) tc.mesh.position.z = -220;
-                tc.wheels.forEach(w => { w.rotation.x += tc.speed * 0.65; });
+                if (tc.stopTimer > 0) {
+                    tc.stopTimer--;
+                    continue;
+                }
+
+                const nextZ = tc.mesh.position.z + tc.baseSpeed;
+                let blocked = false;
+
+                // دیگر ٹریفک گاڑیوں سے ٹکر
+                for (let j = 0; j < trafficCars.length; j++) {
+                    if (i === j) continue;
+                    const other = trafficCars[j];
+                    if (Math.hypot(tc.mesh.position.x - other.mesh.position.x, nextZ - other.mesh.position.z) < 4.6) {
+                        blocked = true;
+                        tc.stopTimer = 25;
+                        spawnSparks(tc.mesh.position, 0xfacc15, 5);
+                        damageVehicle(tc, 6);
+                        damageVehicle(other, 6);
+                        break;
+                    }
+                }
+
+                // کھلاڑی یا گاڑی سے ٹکر
+                if (!blocked) {
+                    const dPlayer = Math.hypot(tc.mesh.position.x - playerPos.x, nextZ - playerPos.z);
+                    if (dPlayer < (activeChar.inVehicle ? activeChar.inVehicle.radius + 2.2 : 2.6)) {
+                        blocked = true;
+                        tc.stopTimer = 35;
+                        spawnSparks(tc.mesh.position, 0xef4444, 8);
+                        playSound(150, 45, 0.2, 'sawtooth', 0.22);
+                        if (activeChar.inVehicle) {
+                            damageVehicle(activeChar.inVehicle, 12);
+                            damagePlayer(8, 'گاڑی کے شدید ٹکراؤ سے آپ کی ہیلتھ ختم ہو گئی!');
+                        } else {
+                            damagePlayer(25, 'تیز گاڑی سے ٹکرانے پر آپ کی ہیلتھ ختم ہو گئی!');
+                        }
+                    }
+                }
+
+                // بندوں (NPCs) سے ٹکر - بندے گر کر مرتے ہیں اور ٹریفک گاڑی رکتی ہے
+                if (!blocked) {
+                    for (let npc of npcs) {
+                        if (npc.dead) continue;
+                        if (Math.hypot(tc.mesh.position.x - npc.mesh.position.x, nextZ - npc.mesh.position.z) < 2.5) {
+                            blocked = true;
+                            tc.stopTimer = 30;
+                            spawnSparks(npc.mesh.position, 0xef4444, 6);
+                            playSound(220, 70, 0.16, 'square', 0.2);
+                            killNpc(npc);
+                            break;
+                        }
+                    }
+                }
+
+                if (!blocked) {
+                    tc.mesh.position.z = nextZ;
+                    if (tc.mesh.position.z > 220) tc.mesh.position.z = -220;
+                    tc.wheels.forEach(w => { w.rotation.x += tc.baseSpeed * 0.65; });
+                }
             }
 
             for (let npc of npcs) {
@@ -1071,104 +1305,105 @@
                 if (Math.random() < 0.01) npc.heading += (Math.random() - 0.5) * 1.5;
             }
 
-            const activeChar = characters[activeCharIdx];
-
-            if (activeChar.inVehicle) {
-                const v = activeChar.inVehicle;
-                if (v.destroyed) {
-                    v.speed = 0;
-                } else if (v.type === 'air') {
-                    helicopter.mainRotor.rotation.y += 0.48;
-                    helicopter.tailRotor.rotation.x += 0.58;
-
-                    if (keys.gas) v.mesh.position.y = Math.min(45, v.mesh.position.y + 0.3);
-                    if (keys.brake) v.mesh.position.y = Math.max(0.2, v.mesh.position.y - 0.28);
-
-                    if (v.mesh.position.y > 0.6) {
-                        if (keys.left) v.heading += 0.038;
-                        if (keys.right) v.heading -= 0.038;
-                        if (keys.nitro) v.speed = Math.min(1.2, v.speed + 0.045);
-                        else v.speed *= 0.96;
-
-                        v.mesh.position.x -= Math.sin(v.heading) * v.speed;
-                        v.mesh.position.z -= Math.cos(v.heading) * v.speed;
-                        v.mesh.rotation.x = -v.speed * 0.2;
-                    } else {
+            if (!isGameOver) {
+                if (activeChar.inVehicle) {
+                    const v = activeChar.inVehicle;
+                    if (v.destroyed) {
                         v.speed = 0;
-                        v.mesh.rotation.x = 0;
-                    }
-                    v.mesh.rotation.y = v.heading;
-                    document.getElementById('speed-num').innerText = Math.round(v.speed * 160);
-                } else {
-                    const maxSpd = keys.nitro ? 1.35 : 0.95;
-                    const acc = keys.nitro ? 0.045 : 0.028;
-                    if (keys.gas) v.speed += acc;
-                    if (keys.brake) v.speed -= 0.035;
-                    v.speed = Math.max(-0.48, Math.min(maxSpd, v.speed));
-                    v.speed *= 0.965;
+                    } else if (v.type === 'air') {
+                        helicopter.mainRotor.rotation.y += 0.48;
+                        helicopter.tailRotor.rotation.x += 0.58;
 
-                    if (Math.abs(v.speed) > 0.015) {
-                        const dir = v.speed > 0 ? 1 : -1;
-                        if (keys.left) v.heading += 0.045 * dir;
-                        if (keys.right) v.heading -= 0.045 * dir;
-                    }
+                        if (keys.gas) v.mesh.position.y = Math.min(45, v.mesh.position.y + 0.3);
+                        if (keys.brake) v.mesh.position.y = Math.max(0.2, v.mesh.position.y - 0.28);
 
-                    const nextX = v.mesh.position.x - Math.sin(v.heading) * v.speed;
-                    const nextZ = v.mesh.position.z - Math.cos(v.heading) * v.speed;
+                        if (v.mesh.position.y > 0.6) {
+                            if (keys.left) v.heading += 0.038;
+                            if (keys.right) v.heading -= 0.038;
+                            if (keys.nitro) v.speed = Math.min(1.2, v.speed + 0.045);
+                            else v.speed *= 0.96;
 
-                    const col = checkCarCollision(nextX, nextZ, v.radius, v.mesh, v.speed);
-                    if (!col.hit) {
-                        v.mesh.position.x = nextX;
-                        v.mesh.position.z = nextZ;
-                    } else {
-                        if (Math.abs(v.speed) > 0.08) {
-                            spawnSparks(v.mesh.position, 0xfacc15, 8);
-                            damageVehicle(v, Math.abs(v.speed) * 14);
-                            playSound(130, 35, 0.2, 'triangle', 0.22);
+                            v.mesh.position.x -= Math.sin(v.heading) * v.speed;
+                            v.mesh.position.z -= Math.cos(v.heading) * v.speed;
+                            v.mesh.rotation.x = -v.speed * 0.2;
+                        } else {
+                            v.speed = 0;
+                            v.mesh.rotation.x = 0;
                         }
-                        v.speed = -v.speed * 0.5;
+                        v.mesh.rotation.y = v.heading;
+                        document.getElementById('speed-num').innerText = Math.round(v.speed * 160);
+                    } else {
+                        const maxSpd = keys.nitro ? 1.35 : 0.95;
+                        const acc = keys.nitro ? 0.045 : 0.028;
+                        if (keys.gas) v.speed += acc;
+                        if (keys.brake) v.speed -= 0.035;
+                        v.speed = Math.max(-0.48, Math.min(maxSpd, v.speed));
+                        v.speed *= 0.965;
+
+                        if (Math.abs(v.speed) > 0.015) {
+                            const dir = v.speed > 0 ? 1 : -1;
+                            if (keys.left) v.heading += 0.045 * dir;
+                            if (keys.right) v.heading -= 0.045 * dir;
+                        }
+
+                        const nextX = v.mesh.position.x - Math.sin(v.heading) * v.speed;
+                        const nextZ = v.mesh.position.z - Math.cos(v.heading) * v.speed;
+
+                        const col = checkCarCollision(nextX, nextZ, v.radius, v.mesh, v.speed);
+                        if (!col.hit) {
+                            v.mesh.position.x = nextX;
+                            v.mesh.position.z = nextZ;
+                        } else {
+                            if (Math.abs(v.speed) > 0.08) {
+                                spawnSparks(v.mesh.position, 0xfacc15, 8);
+                                damageVehicle(v, Math.abs(v.speed) * 14);
+                                if (col.type === 'building') damagePlayer(5, 'عمارت سے ٹکرانے پر آپ کی ہیلتھ ختم ہو گئی!');
+                                playSound(130, 35, 0.2, 'triangle', 0.22);
+                            }
+                            v.speed = -v.speed * 0.5;
+                        }
+
+                        v.mesh.rotation.y = v.heading;
+                        v.wheels.forEach(w => { w.rotation.x -= v.speed * 0.75; });
+                        document.getElementById('speed-num').innerText = Math.round(Math.abs(v.speed) * 145);
+                    }
+                } else {
+                    const moveSpd = keys.sprint ? 0.45 : 0.24;
+                    let spd = 0;
+                    if (keys.gas) spd = moveSpd;
+                    if (keys.brake) spd = -0.16;
+                    if (keys.left) activeChar.heading += 0.052;
+                    if (keys.right) activeChar.heading -= 0.052;
+
+                    const nx = activeChar.mesh.position.x - Math.sin(activeChar.heading) * spd;
+                    const nz = activeChar.mesh.position.z - Math.cos(activeChar.heading) * spd;
+
+                    if (!hitBuildingOrVehicle(nx, nz, 0.5)) {
+                        activeChar.mesh.position.x = nx;
+                        activeChar.mesh.position.z = nz;
+                    }
+                    activeChar.mesh.rotation.y = activeChar.heading + Math.PI;
+
+                    if (Math.abs(spd) > 0.01) {
+                        activeChar.walkCycle += keys.sprint ? 0.4 : 0.25;
+                        const sw = Math.sin(activeChar.walkCycle) * (keys.sprint ? 0.78 : 0.52);
+                        activeChar.leftLeg.rotation.x = sw;
+                        activeChar.rightLeg.rotation.x = -sw;
+                        activeChar.leftArm.rotation.x = -sw * 0.6;
+                        activeChar.rightArm.rotation.x = sw * 0.6;
+                    } else {
+                        activeChar.leftLeg.rotation.x = activeChar.rightLeg.rotation.x = 0;
+                        activeChar.leftArm.rotation.x = activeChar.rightArm.rotation.x = 0;
                     }
 
-                    v.mesh.rotation.y = v.heading;
-                    v.wheels.forEach(w => { w.rotation.x -= v.speed * 0.75; });
-                    document.getElementById('speed-num').innerText = Math.round(Math.abs(v.speed) * 145);
+                    if (sprayingWater && Math.floor(tick * 50) % 2 === 0) {
+                        const fwd = new THREE.Vector3(-Math.sin(activeChar.heading), 0, -Math.cos(activeChar.heading));
+                        const nozzle = activeChar.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0)).add(fwd.clone().multiplyScalar(0.8));
+                        spawnProjectile(nozzle, fwd, 'water');
+                    }
+
+                    document.getElementById('speed-num').innerText = Math.round(Math.abs(spd) * 42);
                 }
-            } else {
-                const moveSpd = keys.sprint ? 0.45 : 0.24;
-                let spd = 0;
-                if (keys.gas) spd = moveSpd;
-                if (keys.brake) spd = -0.16;
-                if (keys.left) activeChar.heading += 0.052;
-                if (keys.right) activeChar.heading -= 0.052;
-
-                const nx = activeChar.mesh.position.x - Math.sin(activeChar.heading) * spd;
-                const nz = activeChar.mesh.position.z - Math.cos(activeChar.heading) * spd;
-
-                if (!hitBuildingOrVehicle(nx, nz, 0.5)) {
-                    activeChar.mesh.position.x = nx;
-                    activeChar.mesh.position.z = nz;
-                }
-                activeChar.mesh.rotation.y = activeChar.heading + Math.PI;
-
-                if (Math.abs(spd) > 0.01) {
-                    activeChar.walkCycle += keys.sprint ? 0.4 : 0.25;
-                    const sw = Math.sin(activeChar.walkCycle) * (keys.sprint ? 0.78 : 0.52);
-                    activeChar.leftLeg.rotation.x = sw;
-                    activeChar.rightLeg.rotation.x = -sw;
-                    activeChar.leftArm.rotation.x = -sw * 0.6;
-                    activeChar.rightArm.rotation.x = sw * 0.6;
-                } else {
-                    activeChar.leftLeg.rotation.x = activeChar.rightLeg.rotation.x = 0;
-                    activeChar.leftArm.rotation.x = activeChar.rightArm.rotation.x = 0;
-                }
-
-                if (sprayingWater) {
-                    const fwd = new THREE.Vector3(-Math.sin(activeChar.heading), 0, -Math.cos(activeChar.heading));
-                    const nozzle = activeChar.mesh.position.clone().add(new THREE.Vector3(0, 1.1, 0)).add(fwd.clone().multiplyScalar(0.8));
-                    spawnProjectile(nozzle, fwd, 'water');
-                }
-
-                document.getElementById('speed-num').innerText = Math.round(Math.abs(spd) * 42);
             }
 
             characters.forEach((ch, idx) => {
@@ -1182,7 +1417,7 @@
                 }
             });
 
-            // گولیاں اور پانی (مضبوط Hit Detection کے ساتھ)
+            // گولیاں اور پانی
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
                 const prevPos = p.mesh.position.clone();
@@ -1192,26 +1427,29 @@
 
                 if (p.type === 'water') {
                     for (let j = fires.length - 1; j >= 0; j--) {
-                        if (p.mesh.position.distanceTo(fires[j].mesh.position) < 3.2) {
-                            fires[j].hp -= 8;
-                            fires[j].mesh.scale.setScalar(Math.max(0.2, fires[j].hp / 100));
+                        const hitFire = [prevPos, midPos, p.mesh.position].some(pt =>
+                            Math.hypot(pt.x - fires[j].mesh.position.x, pt.z - fires[j].mesh.position.z) < 4.5 && pt.y < 4.5
+                        );
+                        if (hitFire) {
+                            fires[j].hp -= 20;
+                            fires[j].mesh.scale.setScalar(Math.max(0.2, fires[j].hp / fires[j].maxHp));
+                            p.life = 0;
                             if (fires[j].hp <= 0) {
                                 scene.remove(fires[j].mesh);
                                 fires.splice(j, 1);
                                 firesPutOut++;
                                 score += 50;
-                                document.getElementById('fires-put').innerText = firesPutOut;
-                                document.getElementById('score').innerText = score;
+                                updateScoreHUD();
                                 playSound(600, 1200, 0.25, 'sine', 0.2);
                                 spawnFire();
                             }
+                            break;
                         }
                     }
                 } else if (p.type === 'bullet') {
                     let hitDone = false;
                     const checkPts = [prevPos, midPos, p.mesh.position];
 
-                    // 1. بندے (NPCs) پر گولی لگنا
                     for (let k = 0; k < npcs.length; k++) {
                         const npc = npcs[k];
                         if (npc.dead) continue;
@@ -1222,16 +1460,13 @@
                             npc.hp -= 25;
                             spawnSparks(npc.mesh.position, 0xef4444, 6);
                             playSound(260, 90, 0.14, 'square', 0.2);
-                            if (npc.hp <= 0) {
-                                killNpc(npc);
-                            }
+                            if (npc.hp <= 0) killNpc(npc);
                             hitDone = true;
                             p.life = 0;
                             break;
                         }
                     }
 
-                    // 2. کھڑی گاڑیوں / ہیلی کاپٹر پر گولی لگنا
                     if (!hitDone) {
                         for (let v of vehicles) {
                             const hitV = checkPts.some(pt =>
@@ -1247,7 +1482,6 @@
                         }
                     }
 
-                    // 3. ٹریفک گاڑیوں پر گولی لگنا
                     if (!hitDone) {
                         for (let tc of trafficCars) {
                             const hitTc = checkPts.some(pt =>
@@ -1262,7 +1496,6 @@
                         }
                     }
 
-                    // 4. عمارت پر گولی لگنا
                     if (!hitDone) {
                         for (let b of buildings) {
                             if (Math.abs(p.mesh.position.x - b.x) < b.hw && Math.abs(p.mesh.position.z - b.z) < b.hd) {
@@ -1290,7 +1523,7 @@
                     scene.remove(coins[i]);
                     coins.splice(i, 1);
                     score += 10;
-                    document.getElementById('score').innerText = score;
+                    updateScoreHUD();
                     playSound(880, 1320, 0.14, 'sine', 0.14);
                     spawnCoin();
                 }

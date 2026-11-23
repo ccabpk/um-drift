@@ -294,6 +294,29 @@
         #btn-cam { border-color: #4ade80; color: #4ade80; }
         #btn-reset { border-color: #fb923c; color: #fb923c; }
 
+        #vehicle-actions {
+            position: absolute;
+            bottom: 104px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            z-index: 26;
+        }
+        #btn-veh-fire {
+            padding: 9px 14px;
+            border-radius: 12px;
+            border: 2px solid #facc15;
+            background: rgba(185, 28, 28, 0.92);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        #btn-veh-fire:active { transform: scale(0.93); }
+
         #foot-actions {
             position: absolute;
             bottom: 102px;
@@ -470,6 +493,10 @@
         <button class="action-btn" id="btn-enter">🚶 سوار / اتریں</button>
         <button class="action-btn" id="btn-cam">🎥 کیمرہ</button>
         <button class="action-btn" id="btn-reset">📍 ری سیٹ</button>
+    </div>
+
+    <div id="vehicle-actions">
+        <button id="btn-veh-fire">🔫 فائر کریں</button>
     </div>
 
     <div id="foot-actions">
@@ -854,7 +881,6 @@
             policeCops.push(copObj);
         }
 
-        // Traffic cars placed along lanes so they frequently pass near tank and roads
         const trafficCars = [];
         const tColors = [0x16a34a, 0xeab308, 0x7c3aed, 0x0284c7, 0xf97316, 0xe2e8f0];
         const laneX = [-10, 0, 12, -18, 24, -4, 8];
@@ -893,12 +919,14 @@
 
         const bossChar = createCharacter('Stage Boss', 0xdc2626, 0x111827, 1.55, true, true);
         bossChar.mesh.visible = false;
+        bossChar.mesh.position.set(0, -50, 0);
         scene.add(bossChar.mesh);
 
         const bossArmy = [];
         for (let i = 0; i < 4; i++) {
             const guard = createCharacter(`Guard-${i + 1}`, 0x7f1d1d, 0x0f172a, 1.05, true, false);
             guard.mesh.visible = false;
+            guard.mesh.position.set(0, -50, 0);
             guard.alive = false;
             guard.arrested = false;
             guard.hp = 60;
@@ -907,7 +935,6 @@
         }
 
         let bossActive = false;
-        let bossDefeatedForStage = false;
         let bossHp = 150;
         let activeCharIdx = 0;
         let policeWanted = false;
@@ -1059,7 +1086,7 @@
         };
 
         function spawnStageBoss() {
-            if (bossActive || bossDefeatedForStage) return;
+            if (bossActive) return;
             bossActive = true;
             bossHp = 120 + currentStage * 30;
             const p = characters[activeCharIdx].inVehicle ? characters[activeCharIdx].inVehicle.mesh.position : characters[activeCharIdx].mesh.position;
@@ -1082,39 +1109,39 @@
             playSound(160, 75, 0.35, 'sawtooth', 0.25);
         }
 
-        function advanceToNextStage() {
+        function hideBossAndArmy() {
             bossActive = false;
-            bossDefeatedForStage = false;
+            bossHp = 0;
             bossChar.mesh.visible = false;
-            bossArmy.forEach(g => { g.alive = false; g.arrested = false; g.mesh.visible = false; });
-            policeCops.forEach(c => { c.arrestingGuard = null; });
+            bossChar.mesh.position.set(0, -50, 0);
+            bossArmy.forEach(g => {
+                g.alive = false;
+                g.arrested = false;
+                g.hp = 0;
+                g.mesh.visible = false;
+                g.mesh.position.set(0, -50, 0);
+            });
             document.getElementById('boss-hud').style.display = 'none';
-
-            if (currentStage < MAX_STAGES) {
-                currentStage++;
-                // Ensure next stage target is well above current score so stages don't skip immediately
-                stageTargetScore = score + 350 + currentStage * 50;
-                coinsBalance += 30;
-                playerHp = MAX_PLAYER_HP;
-                buildCityForStage(currentStage);
-                showStageBanner(`🏙️ باس ختم! نیا اسٹیج ${currentStage} شروع (+30 کوائنز)`);
-                playSound(523, 1046, 0.35, 'triangle', 0.25);
-            } else {
-                showStageBanner('🏆 تمام 20 اسٹیجز کلیئر!');
-            }
-            updateHUD();
         }
 
         function onBossDefeated() {
             if (!bossActive) return;
-            bossActive = false;
-            bossDefeatedForStage = true;
-            bossChar.mesh.visible = false;
-            bossArmy.forEach(g => { g.alive = false; g.arrested = false; g.mesh.visible = false; });
-            document.getElementById('boss-hud').style.display = 'none';
+            hideBossAndArmy();
             score += 150;
             coinsBalance += 40;
-            advanceToNextStage();
+
+            if (currentStage < MAX_STAGES) {
+                const clearedStage = currentStage;
+                currentStage++;
+                stageTargetScore = score + 350 + currentStage * 100;
+                playerHp = MAX_PLAYER_HP;
+                buildCityForStage(currentStage);
+                showStageBanner(`🏆 اسٹیج ${clearedStage} کلیئر! نیا اسٹیج ${currentStage} (ٹارگٹ: ${stageTargetScore})`);
+                playSound(523, 1046, 0.4, 'triangle', 0.28);
+            } else {
+                showStageBanner('🏆 مبارک ہو! تمام 20 اسٹیجز مکمل!');
+            }
+            updateHUD();
         }
 
         function updateHUD() {
@@ -1122,6 +1149,11 @@
                 highScore = score;
                 localStorage.setItem('um_drift_high_score', String(highScore));
             }
+
+            if (!isGameOver && !bossActive && score >= stageTargetScore) {
+                spawnStageBoss();
+            }
+
             document.getElementById('stage-num').innerText = currentStage;
             document.getElementById('stage-target').innerText = stageTargetScore;
             document.getElementById('score').innerText = score;
@@ -1133,21 +1165,22 @@
             const dispVeh = ch.inVehicle || vehicles[0];
             document.getElementById('veh-hp-val').innerText = Math.max(0, Math.round(dispVeh.hp));
 
-            if (!isGameOver && !bossActive && !bossDefeatedForStage && score >= stageTargetScore) {
-                spawnStageBoss();
-            }
-
             document.getElementById('active-char-badge').innerText = `کردار: ${ch.name}`;
             const footBar = document.getElementById('foot-actions');
+            const vehBar = document.getElementById('vehicle-actions');
+            const vehFireBtn = document.getElementById('btn-veh-fire');
             const enterBtn = document.getElementById('btn-enter');
             const vStatus = document.getElementById('vehicle-status');
 
             if (ch.inVehicle) {
                 footBar.style.display = 'none';
+                vehBar.style.display = 'flex';
+                vehFireBtn.innerText = ch.inVehicle.type === 'tank' ? '💥 ٹینک توپ (Fire)' : '🔫 گاڑی سے فائر';
                 enterBtn.innerText = '🚶 باہر نکلیں';
                 vStatus.innerText = `سوار: ${ch.inVehicle.name}`;
             } else {
                 footBar.style.display = 'flex';
+                vehBar.style.display = 'none';
                 enterBtn.innerText = '🚗 سوار / چھینیں';
                 vStatus.innerText = '🏃 پیدل';
             }
@@ -1230,6 +1263,10 @@
                 geo = new THREE.SphereGeometry(0.38, 6, 6);
                 mat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
                 spd = 1.1; life = 42;
+            } else if (type === 'tank_shell') {
+                geo = new THREE.SphereGeometry(0.45, 8, 8);
+                mat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
+                spd = 3.2; life = 85;
             } else if (type === 'rocket') {
                 geo = new THREE.CylinderGeometry(0.18, 0.18, 0.9, 8).rotateX(Math.PI / 2);
                 mat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
@@ -1365,6 +1402,27 @@
             isPaused = false;
         });
 
+        function fireVehicleWeapon() {
+            if (!gameStarted || isGameOver || isPaused) return;
+            initAudio();
+            const ch = characters[activeCharIdx];
+            if (!ch.inVehicle) return;
+            const v = ch.inVehicle;
+            const isTank = v.type === 'tank';
+            const forward = new THREE.Vector3(-Math.sin(v.heading), 0, -Math.cos(v.heading));
+            const muzzle = v.mesh.position.clone()
+                .add(new THREE.Vector3(0, isTank ? 1.65 : 1.0, 0))
+                .add(forward.clone().multiplyScalar(isTank ? 3.5 : 2.8));
+            spawnProjectile(muzzle, forward, isTank ? 'tank_shell' : 'machinegun', false);
+            if (isTank) {
+                spawnSparks(muzzle, 0xf97316, 10);
+                playSound(140, 35, 0.25, 'sawtooth', 0.28);
+            } else {
+                playSound(680, 140, 0.1, 'sawtooth', 0.18);
+            }
+        }
+        document.getElementById('btn-veh-fire').addEventListener('click', fireVehicleWeapon);
+
         function fireWeapon(type) {
             if (!gameStarted || isGameOver || isPaused) return;
             initAudio();
@@ -1473,20 +1531,29 @@
                 if (pc.copRef) { pc.copRef.exited = false; pc.copRef.arrestingGuard = null; pc.copRef.char.mesh.visible = false; }
                 pc.mesh.position.set(idx === 0 ? 18 : -18, 0, idx === 0 ? -14 : -24);
             });
+            trafficCars.forEach((tc, i) => {
+                tc.destroyed = false;
+                tc.hijacked = false;
+                tc.stopTimer = 0;
+                tc.hp = tc.maxHp;
+                tc.mesh.position.set(laneX[i % laneX.length], 0, -45 + i * 16);
+                tc.mesh.rotation.set(0, Math.PI, 0);
+                if (tc.bodyMat && tc.origColor) tc.bodyMat.color.setHex(tc.origColor);
+                if (tc.dmgFlame) { tc.dmgFlame.visible = false; tc.dmgFlame.scale.setScalar(1.0); }
+            });
+            projectiles.forEach(p => scene.remove(p.mesh));
+            projectiles.length = 0;
             currentStage = 1;
             stageTargetScore = 250;
             score = 0;
             coinsBalance = 50;
             chancesLeft = 3;
             playerHp = MAX_PLAYER_HP;
-            bossActive = false;
-            bossDefeatedForStage = false;
-            bossChar.mesh.visible = false;
-            bossArmy.forEach(g => { g.alive = false; g.arrested = false; g.mesh.visible = false; });
-            document.getElementById('boss-hud').style.display = 'none';
+            hideBossAndArmy();
             document.getElementById('game-over-modal').style.display = 'none';
             buildCityForStage(1);
             repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
+            repairAndPlaceVehicle(vehicles[1], new THREE.Vector3(-10, 0, 10));
             characters[activeCharIdx].inVehicle = vehicles[0];
             updateHUD();
         });
@@ -1499,6 +1566,10 @@
             if (e.key === 'ArrowDown' || e.key === 's') keys.brake = true;
             if (e.key === 'Shift') keys.sprint = true;
             if (e.key === ' ') keys.nitro = true;
+            if (e.key === 'f' || e.key === 'Enter') {
+                if (characters[activeCharIdx].inVehicle) fireVehicleWeapon();
+                else fireWeapon('pistol');
+            }
         });
         window.addEventListener('keyup', (e) => {
             if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
@@ -1524,7 +1595,6 @@
                 }
             }
 
-            // Police cars hit by player car or tank
             for (let pc of policeCars) {
                 if (!pc.mesh.visible || pc.destroyed || pc.mesh === ignoreMesh) continue;
                 const d = Math.hypot(x - pc.mesh.position.x, z - pc.mesh.position.z);
@@ -1552,7 +1622,6 @@
                 }
             }
 
-            // NPCs run over by car/tank
             const hitRadiusNpc = effRadius + 1.65;
             for (let npc of npcs) {
                 if (npc.dead) continue;
@@ -1561,7 +1630,6 @@
                 }
             }
 
-            // Boss & Boss Army hit by car/tank
             if (bossActive) {
                 const carDmg = isTank ? 95 : Math.max(28, Math.abs(carSpeed) * 55);
                 if (Math.hypot(x - bossChar.mesh.position.x, z - bossChar.mesh.position.z) < effRadius + 1.8 && (isTank || Math.abs(carSpeed) > 0.015)) {
@@ -1573,6 +1641,7 @@
                     document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
                     if (bossHp <= 0) {
                         onBossDefeated();
+                        return { hit: false };
                     } else {
                         updateHUD();
                     }
@@ -1589,6 +1658,7 @@
                         if (g.hp <= 0) {
                             g.alive = false;
                             g.mesh.visible = false;
+                            g.mesh.position.set(0, -50, 0);
                             score += 40;
                             coinsBalance += 12;
                             updateHUD();
@@ -1664,12 +1734,10 @@
             const playerPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
             const playerInTank = activeChar.inVehicle && activeChar.inVehicle.type === 'tank';
 
-            // If player is in tank, continuously crush/hit nearby cars, police, boss & boss army
             if (playerInTank) {
                 checkCarCollision(playerPos.x, playerPos.z, 4.3, playerPos, activeChar.inVehicle.speed, activeChar.inVehicle.heading, true);
             }
 
-            // Police cars + police officers stepping out, shooting & arresting boss guards
             let anyActivePolice = false;
             policeCars.forEach((pc, idx) => {
                 if (!pc.mesh.visible) return;
@@ -1736,6 +1804,7 @@
                     if (copChar.mesh.position.distanceTo(copObj.car.mesh.position) > 42) {
                         g.alive = false;
                         g.mesh.visible = false;
+                        g.mesh.position.set(0, -50, 0);
                         copObj.arrestingGuard = null;
                         score += 50;
                         coinsBalance += 15;
@@ -1810,8 +1879,7 @@
                 document.getElementById('wanted-badge').style.display = 'none';
             }
 
-            // Traffic cars (also attracted/routed near tank if tank is stationary so cars come under tank)
-            for (let i = 0; i < trafficCars.length; i++) {
+            for (let i = trafficCars.length; i-- > 0;) {
                 const tc = trafficCars[i];
                 if (tc.destroyed) {
                     if (tc.dmgFlame) tc.dmgFlame.scale.y = 1.4 + Math.sin(tick * 12) * 0.3;
@@ -1820,7 +1888,6 @@
                 if (tc.hijacked) continue;
                 if (tc.stopTimer > 0) { tc.stopTimer--; continue; }
 
-                // Gentle steer toward tank when within 28 units so cars pass under/near tank
                 if (playerInTank) {
                     const dxT = playerPos.x - tc.mesh.position.x;
                     const dzT = playerPos.z - tc.mesh.position.z;
@@ -1852,7 +1919,6 @@
                 tc.wheels.forEach(w => { w.rotation.x += tc.baseSpeed * 0.65; });
             }
 
-            // NPCs
             for (let npc of npcs) {
                 if (npc.dead) {
                     npc.respawnTimer--;
@@ -1871,7 +1937,6 @@
                 npc.rightLeg.rotation.x = -Math.sin(npc.walkCycle) * 0.4;
             }
 
-            // Stage Boss + Boss Army AI
             if (bossActive) {
                 const dx = playerPos.x - bossChar.mesh.position.x;
                 const dz = playerPos.z - bossChar.mesh.position.z;
@@ -1908,7 +1973,6 @@
                 });
             }
 
-            // Player movement
             if (activeChar.inVehicle) {
                 const v = activeChar.inVehicle;
                 if (v.destroyed) {
@@ -2001,7 +2065,6 @@
                 }
             });
 
-            // Projectiles (Player & Police)
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
                 p.mesh.position.add(p.vel);
@@ -2018,6 +2081,7 @@
                                 if (g.hp <= 0) {
                                     g.alive = false;
                                     g.mesh.visible = false;
+                                    g.mesh.position.set(0, -50, 0);
                                     score += 30;
                                     updateHUD();
                                 }
@@ -2029,7 +2093,10 @@
                             spawnSparks(bossChar.mesh.position, 0x60a5fa, 6);
                             p.life = 0;
                             document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
-                            if (bossHp <= 0) onBossDefeated();
+                            if (bossHp <= 0) {
+                                onBossDefeated();
+                                break;
+                            }
                         }
                     } else if (Math.hypot(p.mesh.position.x - playerPos.x, p.mesh.position.z - playerPos.z) < 2.2) {
                         p.life = 0;
@@ -2052,8 +2119,8 @@
                             break;
                         }
                     }
-                } else if (['pistol', 'machinegun', 'rocket', 'laser'].includes(p.type)) {
-                    const dmgAmt = p.type === 'rocket' ? 85 : (p.type === 'laser' ? 50 : (p.type === 'machinegun' ? 35 : 22));
+                } else if (['pistol', 'machinegun', 'rocket', 'laser', 'tank_shell'].includes(p.type)) {
+                    const dmgAmt = p.type === 'tank_shell' ? 110 : (p.type === 'rocket' ? 85 : (p.type === 'laser' ? 50 : (p.type === 'machinegun' ? 35 : 22)));
 
                     for (let pc of policeCars) {
                         if (!pc.mesh.visible || pc.destroyed) continue;
@@ -2067,13 +2134,14 @@
                     if (p.life > 0 && bossActive) {
                         for (let g of bossArmy) {
                             if (!g.alive || g.arrested) continue;
-                            if (Math.hypot(p.mesh.position.x - g.mesh.position.x, p.mesh.position.z - g.mesh.position.z) < 2.0) {
+                            if (Math.hypot(p.mesh.position.x - g.mesh.position.x, p.mesh.position.z - g.mesh.position.z) < 2.2) {
                                 g.hp -= dmgAmt;
                                 spawnSparks(g.mesh.position, 0xfacc15, 6);
                                 p.life = 0;
                                 if (g.hp <= 0) {
                                     g.alive = false;
                                     g.mesh.visible = false;
+                                    g.mesh.position.set(0, -50, 0);
                                     score += 40;
                                     coinsBalance += 12;
                                     updateHUD();
@@ -2083,12 +2151,17 @@
                         }
                     }
 
-                    if (p.life > 0 && bossActive && Math.hypot(p.mesh.position.x - bossChar.mesh.position.x, p.mesh.position.z - bossChar.mesh.position.z) < 2.6) {
+                    if (p.life > 0 && bossActive && Math.hypot(p.mesh.position.x - bossChar.mesh.position.x, p.mesh.position.z - bossChar.mesh.position.z) < 2.8) {
                         bossHp -= dmgAmt;
-                        spawnSparks(bossChar.mesh.position, 0xf43f5e, 10);
+                        spawnSparks(bossChar.mesh.position, 0xf43f5e, 12);
                         p.life = 0;
                         document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
-                        if (bossHp <= 0) onBossDefeated();
+                        if (bossHp <= 0) {
+                            onBossDefeated();
+                            scene.remove(p.mesh);
+                            projectiles.splice(i, 1);
+                            break;
+                        }
                     }
 
                     if (p.life > 0) {
@@ -2115,7 +2188,6 @@
             const focusPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
             const focusHeading = activeChar.inVehicle ? activeChar.inVehicle.heading : activeChar.heading;
 
-            // Vehicle & Player Repair Pickups
             for (let i = repairPickups.length - 1; i >= 0; i--) {
                 repairPickups[i].rotation.y += 0.05;
                 if (focusPos.distanceTo(repairPickups[i].position) < 3.2) {
@@ -2133,7 +2205,6 @@
                 }
             }
 
-            // Coins
             for (let i = coins.length - 1; i >= 0; i--) {
                 coins[i].rotation.z += 0.06;
                 if (focusPos.distanceTo(coins[i].position) < 3.0) {
@@ -2147,7 +2218,6 @@
                 }
             }
 
-            // Camera
             let camOff;
             if (!activeChar.inVehicle) camOff = new THREE.Vector3(0, 3.8, 7.2);
             else if (activeChar.inVehicle.type === 'tank') camOff = new THREE.Vector3(0, 6.8, 14.5);

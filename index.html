@@ -390,7 +390,7 @@
                 <div>کوائنز: <span class="gold-val" id="coins-val">50</span></div>
                 <div>چانس: <span class="hp-val" id="chances-val">3</span>/3</div>
                 <div>ہیلتھ: <span class="hp-val" id="hp-val">150</span></div>
-                <div>گاڑی HP: <span class="stat-val" id="veh-hp-val">150</span></div>
+                <div>گاڑی HP: <span class="stat-val" id="veh-hp-val">180</span></div>
             </div>
         </div>
         <div class="hud-panel" style="text-align: right;">
@@ -399,7 +399,7 @@
         </div>
     </div>
 
-    <div id="wanted-badge">🚓 پولیس پیچھے لگ گئی ہے!</div>
+    <div id="wanted-badge">🚓 پولیس ایکٹیو ہے!</div>
     <div id="boss-hud">👹 اسٹیج دشمن (Boss) HP: <span id="boss-hp">150</span></div>
     <div id="stage-banner"></div>
 
@@ -654,7 +654,6 @@
             const headLightMat = new THREE.MeshBasicMaterial({ color: 0xfef08a });
             const tailLightMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
 
-            // Sleek lower body & fenders
             const lower = new THREE.Mesh(new THREE.BoxGeometry(2.24, 0.52, 4.9), bodyMat);
             lower.position.set(0, 0.55, 0);
             const hood = new THREE.Mesh(new THREE.BoxGeometry(2.08, 0.22, 1.55), bodyMat);
@@ -664,13 +663,11 @@
             trunk.position.set(0, 0.82, 1.65);
             trunk.rotation.x = -0.08;
 
-            // Cabin & glass
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.74, 0.5, 1.8), bodyMat);
             cabin.position.set(0, 1.18, 0.05);
             const glass = new THREE.Mesh(new THREE.BoxGeometry(1.78, 0.38, 1.56), glassMat);
             glass.position.set(0, 1.16, 0.05);
 
-            // Bumpers & side mirrors
             const bumperF = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.26, 0.32), darkMat);
             bumperF.position.set(0, 0.4, -2.46);
             const bumperR = bumperF.clone(); bumperR.position.z = 2.46;
@@ -679,7 +676,6 @@
             mirrorL.position.set(-1.05, 1.05, -0.55);
             const mirrorR = mirrorL.clone(); mirrorR.position.x = 1.05;
 
-            // Headlights & Taillights
             const hlL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.08), headLightMat);
             hlL.position.set(-0.75, 0.68, -2.46);
             const hlR = hlL.clone(); hlR.position.x = 0.75;
@@ -784,14 +780,21 @@
             { id: 'boat', name: 'بوٹ 🚤', mesh: boatMesh, wheels: [], speed: 0, heading: 0, radius: 2.4, type: 'water', hp: 220, maxHp: 220, destroyed: false, unlocked: false }
         ];
 
-        // Moderate police chase cars (only 2 cars, balanced speed)
+        // Police cars visible on streets from the start & chasing player/boss
         const policeCars = [];
         for (let i = 0; i < 2; i++) {
             const pc = createRealisticCar(0x0f172a, 'police');
-            pc.mesh.position.set(55 + i * 24, 0, -55 - i * 20);
-            pc.mesh.visible = false;
+            pc.mesh.position.set(i === 0 ? 22 : -22, 0, i === 0 ? -18 : -32);
+            pc.mesh.visible = true;
             scene.add(pc.mesh);
-            policeCars.push({ mesh: pc.mesh, wheels: pc.wheels, heading: 0, speed: 0.22, active: false });
+            policeCars.push({
+                mesh: pc.mesh,
+                wheels: pc.wheels,
+                heading: 0,
+                speed: 0.22,
+                patrolDir: i === 0 ? 1 : -1,
+                active: false
+            });
         }
 
         // Traffic cars
@@ -852,11 +855,12 @@
         characters[1].mesh.position.set(3.5, 0, 12);
         scene.add(characters[0].mesh, characters[1].mesh);
 
+        // NPCs placed near roads and starting area so car collisions are immediate & clear
         const npcs = [];
         const npcColors = [0x10b981, 0xec4899, 0x8b5cf6, 0x06b6d4, 0xf97316];
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < 14; i++) {
             const npc = createCharacter(`NPC-${i + 1}`, npcColors[i % npcColors.length], 0x1e293b, 0.92, false, false);
-            npc.mesh.position.set((Math.random() - 0.5) * 70, 0, (Math.random() - 0.5) * 70);
+            npc.mesh.position.set((i - 6.5) * 6, 0, -6 - (i % 4) * 14);
             npc.heading = Math.random() * Math.PI * 2;
             scene.add(npc.mesh);
             npcs.push(npc);
@@ -917,7 +921,7 @@
                 pc.active = true;
                 pc.mesh.visible = true;
                 const ang = idx * 3.14;
-                pc.mesh.position.set(pPos.x + Math.cos(ang) * 42, 0, pPos.z + Math.sin(ang) * 42);
+                pc.mesh.position.set(pPos.x + Math.cos(ang) * 32, 0, pPos.z + Math.sin(ang) * 32);
             });
         }
 
@@ -1020,9 +1024,12 @@
                 g.mesh.position.set(p.x + 10 + (idx % 2) * 5, 0, p.z - 10 - Math.floor(idx / 2) * 5);
             });
 
+            // Police also chase the boss!
+            triggerPoliceChase();
+
             document.getElementById('boss-hp').innerText = bossHp;
             document.getElementById('boss-hud').style.display = 'block';
-            showStageBanner(`👹 اسٹیج ${currentStage} کا دشمن اور اس کی آرمی آ گئی!`);
+            showStageBanner(`👹 اسٹیج ${currentStage} کا دشمن اور اس کی آرمی آ گئی! پولیس بھی پیچھے ہے`);
             playSound(160, 75, 0.35, 'sawtooth', 0.25);
         }
 
@@ -1205,6 +1212,8 @@
             npc.respawnTimer = 240;
             npc.mesh.rotation.x = Math.PI / 2;
             npc.mesh.position.y = 0.25;
+            spawnSparks(npc.mesh.position, 0xef4444, 6);
+            playSound(300, 90, 0.15, 'sawtooth', 0.16);
             score += 30;
             coinsBalance += 10;
             updateHUD();
@@ -1388,7 +1397,11 @@
             isPaused = false;
             policeWanted = false;
             document.getElementById('wanted-badge').style.display = 'none';
-            policeCars.forEach(pc => { pc.active = false; pc.mesh.visible = false; });
+            policeCars.forEach((pc, idx) => {
+                pc.active = false;
+                pc.mesh.visible = true;
+                pc.mesh.position.set(idx === 0 ? 22 : -22, 0, idx === 0 ? -18 : -32);
+            });
             currentStage = 1;
             stageTargetScore = 250;
             score = 0;
@@ -1424,7 +1437,7 @@
             if (e.key === ' ') keys.nitro = false;
         });
 
-        // ================= ٹکراؤ، ٹینک کا اثر اور پانی =================
+        // ================= ٹکراؤ، ٹینک کا اثر، بندے اور باس آرمی =================
         function isInsideWater(x, z) {
             return Math.abs(x - WATER_ZONE.x) < (WATER_ZONE.w / 2 - 2.0) &&
                    Math.abs(z - WATER_ZONE.z) < (WATER_ZONE.d / 2 - 2.0);
@@ -1449,12 +1462,54 @@
                     return { hit: !isTank, type: 'traffic' };
                 }
             }
+
+            // NPCs run over by car/tank
+            const hitRadiusNpc = radius + 1.35;
             for (let npc of npcs) {
                 if (npc.dead) continue;
-                if (Math.hypot(x - npc.mesh.position.x, z - npc.mesh.position.z) < radius + 0.95 && (isTank || Math.abs(carSpeed) > 0.06)) {
+                if (Math.hypot(x - npc.mesh.position.x, z - npc.mesh.position.z) < hitRadiusNpc && (isTank || Math.abs(carSpeed) > 0.02)) {
                     killNpc(npc);
                 }
             }
+
+            // Boss & Boss Army hit by car/tank
+            if (bossActive) {
+                const carDmg = isTank ? 95 : Math.max(28, Math.abs(carSpeed) * 55);
+                if (Math.hypot(x - bossChar.mesh.position.x, z - bossChar.mesh.position.z) < radius + 1.8 && (isTank || Math.abs(carSpeed) > 0.02)) {
+                    bossHp -= carDmg;
+                    bossChar.mesh.position.x -= Math.sin(heading) * 2.2;
+                    bossChar.mesh.position.z -= Math.cos(heading) * 2.2;
+                    spawnSparks(bossChar.mesh.position, 0xf43f5e, 10);
+                    playSound(200, 60, 0.2, 'sawtooth', 0.22);
+                    document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
+                    if (bossHp <= 0) {
+                        score += 150;
+                        coinsBalance += 40;
+                        advanceToNextStage();
+                    } else {
+                        updateHUD();
+                    }
+                }
+
+                for (let g of bossArmy) {
+                    if (!g.alive) continue;
+                    if (Math.hypot(x - g.mesh.position.x, z - g.mesh.position.z) < radius + 1.5 && (isTank || Math.abs(carSpeed) > 0.02)) {
+                        g.hp -= carDmg;
+                        g.mesh.position.x -= Math.sin(heading) * 2.0;
+                        g.mesh.position.z -= Math.cos(heading) * 2.0;
+                        spawnSparks(g.mesh.position, 0xfacc15, 8);
+                        playSound(240, 70, 0.16, 'sawtooth', 0.18);
+                        if (g.hp <= 0) {
+                            g.alive = false;
+                            g.mesh.visible = false;
+                            score += 40;
+                            coinsBalance += 12;
+                            updateHUD();
+                        }
+                    }
+                }
+            }
+
             return { hit: false };
         }
 
@@ -1481,15 +1536,13 @@
             mCtx.fillStyle = 'rgba(2, 132, 199, 0.7)';
             mCtx.fillRect(wx - (WATER_ZONE.w * sc) / 2, wz - (WATER_ZONE.d * sc) / 2, WATER_ZONE.w * sc, WATER_ZONE.d * sc);
 
-            if (policeWanted) {
-                mCtx.fillStyle = '#60a5fa';
-                policeCars.forEach(pc => {
-                    if (!pc.active) return;
-                    mCtx.beginPath();
-                    mCtx.arc(cx + (pc.mesh.position.x - centerPos.x) * sc, cy + (pc.mesh.position.z - centerPos.z) * sc, 3, 0, Math.PI * 2);
-                    mCtx.fill();
-                });
-            }
+            mCtx.fillStyle = '#60a5fa';
+            policeCars.forEach(pc => {
+                if (!pc.mesh.visible) return;
+                mCtx.beginPath();
+                mCtx.arc(cx + (pc.mesh.position.x - centerPos.x) * sc, cy + (pc.mesh.position.z - centerPos.z) * sc, 3, 0, Math.PI * 2);
+                mCtx.fill();
+            });
 
             if (bossActive) {
                 mCtx.fillStyle = '#f43f5e';
@@ -1524,18 +1577,23 @@
             const playerPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
             const playerInTank = activeChar.inVehicle && activeChar.inVehicle.type === 'tank';
 
-            // Police chase AI (Tank crushes police cars!)
-            if (policeWanted) {
-                let anyActive = false;
-                policeCars.forEach((pc, idx) => {
-                    if (!pc.active) return;
-                    anyActive = true;
+            // Police patrol + chase player & boss
+            let anyActivePolice = false;
+            policeCars.forEach((pc, idx) => {
+                if (!pc.mesh.visible) return;
+
+                // Target boss if boss is active, otherwise player if wanted
+                const targetPos = bossActive ? bossChar.mesh.position : (policeWanted ? playerPos : null);
+                const chasingBoss = bossActive;
+
+                if (targetPos) {
+                    anyActivePolice = true;
                     const offX = (idx - 0.5) * 6;
-                    const dx = (playerPos.x + offX) - pc.mesh.position.x;
-                    const dz = playerPos.z - pc.mesh.position.z;
+                    const dx = (targetPos.x + offX) - pc.mesh.position.x;
+                    const dz = targetPos.z - pc.mesh.position.z;
                     const dist = Math.hypot(dx, dz);
 
-                    if (playerInTank && dist < 5.2) {
+                    if (playerInTank && !chasingBoss && dist < 5.2) {
                         destroyPoliceCar(pc);
                         return;
                     }
@@ -1546,15 +1604,31 @@
                         pc.mesh.position.x -= Math.sin(pc.heading) * pc.speed;
                         pc.mesh.position.z -= Math.cos(pc.heading) * pc.speed;
                         pc.wheels.forEach(w => { w.rotation.x -= pc.speed * 0.7; });
-                    } else if (!playerInTank && Math.round(tick * 50) % 60 === 0) {
+                    } else if (chasingBoss && Math.round(tick * 50) % 45 === 0) {
+                        bossHp -= 12;
+                        spawnSparks(bossChar.mesh.position, 0x60a5fa, 6);
+                        document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
+                        if (bossHp <= 0) {
+                            score += 150;
+                            coinsBalance += 40;
+                            advanceToNextStage();
+                        }
+                    } else if (!chasingBoss && !playerInTank && Math.round(tick * 50) % 60 === 0) {
                         if (activeChar.inVehicle) damageVehicle(activeChar.inVehicle, 6);
                         else damagePlayer(10, 'پولیس کے حملے سے آپ کے چانسز ختم ہو گئے!');
                     }
-                });
-                if (!anyActive) {
-                    policeWanted = false;
-                    document.getElementById('wanted-badge').style.display = 'none';
+                } else {
+                    // Visible street patrol
+                    pc.mesh.position.x += pc.patrolDir * 0.14;
+                    pc.mesh.rotation.y = pc.patrolDir > 0 ? -Math.PI / 2 : Math.PI / 2;
+                    if (Math.abs(pc.mesh.position.x) > 95) pc.patrolDir *= -1;
+                    pc.wheels.forEach(w => { w.rotation.x += 0.1; });
                 }
+            });
+
+            if (policeWanted && !anyActivePolice) {
+                policeWanted = false;
+                document.getElementById('wanted-badge').style.display = 'none';
             }
 
             // Traffic cars

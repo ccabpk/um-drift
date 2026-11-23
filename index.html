@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UM Drift - Open World 3D</title>
     <style>
+        /* بنیادی ری سیٹ اور اسکرین لاک */
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             overflow: hidden;
@@ -13,6 +14,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
             user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* ================= سٹارٹ اسکرین اور پلیئر اوتار ================= */
@@ -90,7 +92,7 @@
             box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
         }
         .primary-btn:active { transform: scale(0.98); }
-        .offline-pill {
+        .online-pill {
             display: inline-block;
             margin-top: 10px;
             font-size: 11px;
@@ -529,7 +531,7 @@
                 </button>
             </div>
             <button class="primary-btn" id="btn-start-game">▶ گیم شروع کریں</button>
-            <div class="offline-pill" id="offline-status">📶 آف لائن اور آن لائن دونوں موڈ تیار</div>
+            <div class="online-pill" id="online-status">🌐 براؤزر آن لائن موڈ تیار</div>
         </div>
     </div>
 
@@ -661,28 +663,24 @@
         </div>
     </div>
 
+    <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // ================= محفوظ آف لائن کیش سپورٹ =================
-        function setupOfflineSupport() {
+        // ================= آن لائن اسٹیٹس چیک =================
+        function updateOnlineBadge() {
             try {
-                if ('caches' in window && window.location.protocol.startsWith('http')) {
-                    const cacheName = 'um-drift-3d-v1';
-                    const urlsToCache = [window.location.href, 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'];
-                    caches.open(cacheName).then(cache => {
-                        cache.addAll(urlsToCache).catch(() => {});
-                    }).catch(() => {});
-                }
-                const statusEl = document.getElementById('offline-status');
+                const statusEl = document.getElementById('online-status');
                 if (statusEl) {
-                    statusEl.innerText = navigator.onLine ? '🌐 آن لائن موڈ • آف لائن کیش فعال' : '📶 آف لائن موڈ فعال';
+                    statusEl.innerText = navigator.onLine
+                        ? '🌐 آن لائن موڈ فعال • Three.js تیار'
+                        : '⚠️ انٹرنیٹ کنکشن چیک کریں (آن لائن گیم)';
                 }
-            } catch (e) {
-                // کیش سپورٹ نہ ہونے پر بھی گیم بلا روک ٹوک چلتی رہے گی
-            }
+            } catch (e) {}
         }
-        setupOfflineSupport();
+        updateOnlineBadge();
+        window.addEventListener('online', updateOnlineBadge);
+        window.addEventListener('offline', updateOnlineBadge);
 
         // ================= ویب آڈیو ساؤنڈ ایفیکٹس =================
         let audioCtx = null;
@@ -728,7 +726,12 @@
         let chancesLeft = 3;
         const MAX_PLAYER_HP = 150;
         let playerHp = MAX_PLAYER_HP;
-        let highScore = parseInt(localStorage.getItem('um_drift_high_score') || '0', 10) || 0;
+        let highScore = 0;
+        try {
+            highScore = parseInt(localStorage.getItem('um_drift_high_score') || '0', 10) || 0;
+        } catch (e) {
+            highScore = 0;
+        }
         let activeCharIdx = 0;
         let camMode = 0;
         let sprayingWater = false;
@@ -944,7 +947,6 @@
                 scene.background = new THREE.Color(0x0284c7);
                 scene.fog = new THREE.FogExp2(0x0369a1, 0.0022);
 
-                // سمندر کی سطح
                 const seaMesh = new THREE.Mesh(
                     new THREE.PlaneGeometry(640, 640).rotateX(-Math.PI / 2),
                     new THREE.MeshPhongMaterial({ color: 0x0369a1, shininess: 90 })
@@ -952,7 +954,6 @@
                 seaMesh.position.y = -0.15;
                 cityGroup.add(seaMesh);
 
-                // مرکزی ہاربر جزیرہ (68x68)
                 const island = new THREE.Mesh(
                     new THREE.BoxGeometry(68, 1.4, 68),
                     new THREE.MeshLambertMaterial({ color: 0x475569 })
@@ -975,7 +976,6 @@
                     buildings.push({ x: ib.x, z: ib.z, hw: ib.w / 2, hd: ib.d / 2 });
                 });
 
-                // سمندر میں گشت کرنے والے 6 بڑے بحری جہاز
                 const shipConfigs = [
                     { x: 75, z: -40, dir: 1, col: 0x1e293b, cab: 0xf8fafc, sc: 1.0 },
                     { x: -85, z: 30, dir: -1, col: 0x0f766e, cab: 0xe2e8f0, sc: 1.1 },
@@ -1015,7 +1015,6 @@
                 ground.position.y = -0.05;
                 cityGroup.add(ground);
 
-                // سڑکوں کے خطوط (Road Grid)
                 const roadMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
                 for (let gx = -128; gx <= 128; gx += BLOCK_STEP) {
                     const line = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 360).rotateX(-Math.PI / 2), roadMat);
@@ -1028,7 +1027,6 @@
                     cityGroup.add(line);
                 }
 
-                // پانی کا زون (WATER_ZONE)
                 const waterMesh = new THREE.Mesh(
                     new THREE.PlaneGeometry(WATER_ZONE.w, WATER_ZONE.d).rotateX(-Math.PI / 2),
                     new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 95 })
@@ -1036,7 +1034,6 @@
                 waterMesh.position.set(WATER_ZONE.x, 0.04, WATER_ZONE.z);
                 cityGroup.add(waterMesh);
 
-                // عمارات (Buildings)
                 const bColors = ['#1e293b', '#1e3a8a', '#312e81', '#0f766e', '#7c2d12'];
                 for (let bx = -96; bx <= 96; bx += BLOCK_STEP) {
                     for (let bz = -96; bz <= 96; bz += BLOCK_STEP) {
@@ -1200,7 +1197,6 @@
             { id: 'boat', name: 'بوٹ 🚤', mesh: boatMesh, wheels: [], speed: 0, heading: 0, radius: 2.4, type: 'water', hp: 250, maxHp: 250, destroyed: false, unlocked: false }
         ];
 
-        // ٹریفک گاڑیاں
         const trafficColors = [0x2563eb, 0x16a34a, 0xeab308, 0x9333ea, 0x06b6d4, 0xf97316, 0xec4899, 0x64748b];
         for (let i = 0; i < 8; i++) {
             const tc = createRealisticCar(trafficColors[i % trafficColors.length], 'sedan');
@@ -1621,7 +1617,6 @@
             });
         }
 
-        // ابتدائی اداروں کی تعمیر
         for (let i = 0; i < 2; i++) {
             const pc = createRealisticCar(0x0f172a, 'police');
             pc.mesh.position.set(i === 0 ? 18 : -18, 0, i === 0 ? -14 : -24);
@@ -1777,7 +1772,9 @@
         function updateHUD() {
             if (score > highScore) {
                 highScore = score;
-                localStorage.setItem('um_drift_high_score', String(highScore));
+                try {
+                    localStorage.setItem('um_drift_high_score', String(highScore));
+                } catch (e) {}
             }
 
             if (!isGameOver && !bossActive && score >= stageTargetScore) {
@@ -1969,6 +1966,7 @@
         }
 
         function repairAndPlaceVehicle(v, targetPos) {
+            if (!v || !targetPos) return;
             v.mesh.position.copy(targetPos);
             v.speed = 0;
             v.heading = 0;
@@ -3359,3 +3357,4 @@
     </script>
 </body>
 </html>
+```

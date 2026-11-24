@@ -551,7 +551,7 @@
     </div>
 
     <div id="wanted-badge">🚓 پولیس ایکٹیو ہے!</div>
-    <div id="boss-hud">👹 اسٹیج دشمن (Boss) HP: <span id="boss-hp">150</span></div>
+    <div id="boss-hud">👹 اسٹیج دشمن (Boss) HP: <span id="boss-hp">600</span></div>
     <div id="stage-banner"></div>
 
     <!-- شاپ ماڈل -->
@@ -737,10 +737,11 @@
         let sprayingWater = false;
         let policeWanted = false;
         let bossActive = false;
-        let bossHp = 150;
+        let bossHp = 600;
         let isCurrentStageSea = false;
 
-        const WATER_ZONE = { x: 0, z: -115, w: 72, d: 44 };
+        // بڑا سمندری زون (عام شہروں میں بھی وسیع سمندر/جھیل)
+        const WATER_ZONE = { x: 0, z: -135, w: 160, d: 110 };
         const BLOCK_STEP = 32;
         const laneX = [-24, -8, 8, 24];
 
@@ -765,17 +766,17 @@
                 return {
                     tier: 0,
                     label: '',
-                    scoreStep: 350 + stageNum * 100,
-                    bossHp: 120 + stageNum * 30,
-                    bossSpeed: 0.15,
+                    scoreStep: 350 + stageNum * 110,
+                    bossHp: 520 + stageNum * 130, // باس کی ہیلتھ کافی بڑھا دی گئی ہے (650 سے 2470 تک)
+                    bossSpeed: 0.16,
                     guardCount: 4,
-                    guardHp: 60,
+                    guardHp: 85 + stageNum * 5,
                     guardSpeed: 0.17,
                     gangCount: 4,
-                    gangHp: 55,
+                    gangHp: 70,
                     enemyDmgMult: 1.0,
                     policeSpeed: 0.25,
-                    shipHp: 250
+                    shipHp: 350
                 };
             }
             const tier = stageNum - 15;
@@ -783,17 +784,17 @@
             return {
                 tier,
                 label: tierNames[tier] || `🔥 لیول +${tier}`,
-                scoreStep: 650 + tier * 260,
-                bossHp: 620 + tier * 170,
-                bossSpeed: 0.16 + tier * 0.016,
+                scoreStep: 700 + tier * 280,
+                bossHp: 2600 + tier * 450, // سمندری لیولز میں باس ہیلتھ 3050 سے 4850 تک
+                bossSpeed: 0.17 + tier * 0.016,
                 guardCount: Math.min(8, 4 + tier),
-                guardHp: 75 + tier * 22,
+                guardHp: 120 + tier * 28,
                 guardSpeed: 0.18 + tier * 0.015,
                 gangCount: Math.min(8, 4 + tier),
-                gangHp: 70 + tier * 20,
+                gangHp: 95 + tier * 22,
                 enemyDmgMult: 1 + tier * 0.24,
                 policeSpeed: 0.26 + tier * 0.018,
-                shipHp: 300 + tier * 80
+                shipHp: 450 + tier * 100
             };
         }
 
@@ -821,15 +822,15 @@
             if (bannerTimeout) clearTimeout(bannerTimeout);
             bannerTimeout = setTimeout(() => {
                 banner.style.display = 'none';
-            }, 3400);
+            }, 3800);
         }
 
         // ================= Three.js سین، لائٹس، کیمرہ اور رینڈرر =================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87ceeb);
-        scene.fog = new THREE.FogExp2(0x87ceeb, 0.0032);
+        scene.fog = new THREE.FogExp2(0x87ceeb, 0.0024);
 
-        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 450);
+        const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 750);
         camera.position.set(0, 7, 22);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
@@ -891,6 +892,7 @@
         const buildings = [];
         const trafficCars = [];
         const seaShips = [];
+        const seaBoats = []; // سمندر میں مزید اسپیڈ بوٹس
 
         function createLargeShip(hullCol = 0x1e293b, cabinCol = 0xf8fafc, scale = 1.0) {
             const ship = new THREE.Group();
@@ -931,9 +933,84 @@
             return { mesh: ship, dmgFlame };
         }
 
+        function createBoat(hullCol = 0xf8fafc, stripeCol = 0x0ea5e9) {
+            const boat = new THREE.Group();
+            const hullMat = new THREE.MeshPhongMaterial({ color: hullCol, shininess: 90 });
+            const hull = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.9, 5.8), hullMat);
+            hull.position.set(0, 0.45, 0);
+            const noseGeo = new THREE.ConeGeometry(1.85, 2.2, 4);
+            noseGeo.rotateY(Math.PI / 4);
+            noseGeo.rotateX(-Math.PI / 2);
+            const nose = new THREE.Mesh(noseGeo, hullMat);
+            nose.position.set(0, 0.45, -3.9);
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.66, 0.25, 5.85), new THREE.MeshLambertMaterial({ color: stripeCol }));
+            stripe.position.set(0, 0.58, 0);
+            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 1.8), new THREE.MeshLambertMaterial({ color: 0x38bdf8 }));
+            cabin.position.set(0, 1.08, 0.4);
+            const gunGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8);
+            gunGeo.rotateX(Math.PI / 2);
+            const twinGun = new THREE.Mesh(gunGeo, new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+            twinGun.position.set(0, 1.05, -2.2);
+
+            const dmgFlame = new THREE.Mesh(new THREE.ConeGeometry(0.85, 2.0, 8), new THREE.MeshBasicMaterial({ color: 0xf97316 }));
+            dmgFlame.position.set(0, 1.8, 0);
+            dmgFlame.visible = false;
+
+            boat.add(hull, nose, stripe, cabin, twinGun, dmgFlame);
+            return { mesh: boat, dmgFlame, bodyMat: hullMat, origColor: hullCol };
+        }
+
         function clearGroupChildren(grp) {
             while (grp.children.length > 0) {
                 grp.remove(grp.children[0]);
+            }
+        }
+
+        function spawnSeaFleetBoats(seaStage) {
+            seaBoats.length = 0;
+            const boatPalette = [
+                { hull: 0xfacc15, stripe: 0xdc2626 },
+                { hull: 0x22c55e, stripe: 0x0f172a },
+                { hull: 0xf97316, stripe: 0xffffff },
+                { hull: 0x38bdf8, stripe: 0x1e3a8a },
+                { hull: 0xec4899, stripe: 0xfef08a },
+                { hull: 0xe2e8f0, stripe: 0x0f766e }
+            ];
+
+            const count = seaStage ? 6 : 3;
+            for (let i = 0; i < count; i++) {
+                const pal = boatPalette[i % boatPalette.length];
+                const bObj = createBoat(pal.hull, pal.stripe);
+                const bx = seaStage
+                    ? ((i % 2 === 0 ? 1 : -1) * (58 + i * 24))
+                    : (WATER_ZONE.x - 45 + i * 42);
+                const bz = seaStage
+                    ? (-90 + i * 38)
+                    : (WATER_ZONE.z - 20 + (i % 2) * 35);
+                const heading = i % 2 === 0 ? 0 : Math.PI;
+                bObj.mesh.position.set(bx, 0.1, bz);
+                bObj.mesh.rotation.y = heading;
+                shipsGroup.add(bObj.mesh);
+
+                seaBoats.push({
+                    id: `seaboat_${i}`,
+                    name: `اسپیڈ بوٹ #${i + 1} 🚤`,
+                    mesh: bObj.mesh,
+                    dmgFlame: bObj.dmgFlame,
+                    bodyMat: bObj.bodyMat,
+                    origColor: bObj.origColor,
+                    wheels: [],
+                    speed: 0,
+                    baseSpeed: 0.24 + (i % 3) * 0.06,
+                    heading: heading,
+                    radius: 2.3,
+                    type: 'water',
+                    hp: 200,
+                    maxHp: 200,
+                    destroyed: false,
+                    hijacked: false,
+                    unlocked: true
+                });
             }
         }
 
@@ -942,33 +1019,36 @@
             clearGroupChildren(shipsGroup);
             buildings.length = 0;
             seaShips.length = 0;
+            seaBoats.length = 0;
 
             isCurrentStageSea = stageNum >= 16;
 
             if (isCurrentStageSea) {
                 scene.background = new THREE.Color(0x0284c7);
-                scene.fog = new THREE.FogExp2(0x0369a1, 0.0022);
+                scene.fog = new THREE.FogExp2(0x0369a1, 0.0014);
 
-                const seaGeo = new THREE.PlaneGeometry(640, 640);
+                // بہت بڑا سمندر (1400 x 1400)
+                const seaGeo = new THREE.PlaneGeometry(1400, 1400);
                 seaGeo.rotateX(-Math.PI / 2);
                 const seaMesh = new THREE.Mesh(
                     seaGeo,
-                    new THREE.MeshPhongMaterial({ color: 0x0369a1, shininess: 90 })
+                    new THREE.MeshPhongMaterial({ color: 0x0369a1, shininess: 95 })
                 );
                 seaMesh.position.y = -0.15;
                 cityGroup.add(seaMesh);
 
+                // بندرگاہ جزیرہ (Harbor Island)
                 const island = new THREE.Mesh(
-                    new THREE.BoxGeometry(68, 1.4, 68),
+                    new THREE.BoxGeometry(76, 1.4, 76),
                     new THREE.MeshLambertMaterial({ color: 0x475569 })
                 );
                 island.position.set(0, 0, 0);
                 cityGroup.add(island);
 
                 const islandBldCoords = [
-                    { x: -18, z: -18, w: 10, d: 10, h: 16, col: '#1e293b' },
-                    { x: 18, z: -18, w: 10, d: 10, h: 14, col: '#1e3a8a' },
-                    { x: -18, z: 18, w: 10, d: 10, h: 12, col: '#334155' }
+                    { x: -20, z: -20, w: 10, d: 10, h: 16, col: '#1e293b' },
+                    { x: 20, z: -20, w: 10, d: 10, h: 14, col: '#1e3a8a' },
+                    { x: -20, z: 20, w: 10, d: 10, h: 12, col: '#334155' }
                 ];
                 islandBldCoords.forEach(ib => {
                     const m = new THREE.Mesh(
@@ -981,12 +1061,14 @@
                 });
 
                 const shipConfigs = [
-                    { x: 75, z: -40, dir: 1, col: 0x1e293b, cab: 0xf8fafc, sc: 1.0 },
-                    { x: -85, z: 30, dir: -1, col: 0x0f766e, cab: 0xe2e8f0, sc: 1.1 },
-                    { x: 115, z: 75, dir: 1, col: 0x1e3a8a, cab: 0xfacc15, sc: 0.95 },
-                    { x: -120, z: -85, dir: -1, col: 0x7f1d1d, cab: 0xf8fafc, sc: 1.15 },
-                    { x: 55, z: 130, dir: -1, col: 0x334155, cab: 0x38bdf8, sc: 1.0 },
-                    { x: -65, z: -135, dir: 1, col: 0x4338ca, cab: 0xf8fafc, sc: 1.05 }
+                    { x: 95, z: -60, dir: 1, col: 0x1e293b, cab: 0xf8fafc, sc: 1.05 },
+                    { x: -105, z: 45, dir: -1, col: 0x0f766e, cab: 0xe2e8f0, sc: 1.15 },
+                    { x: 155, z: 95, dir: 1, col: 0x1e3a8a, cab: 0xfacc15, sc: 1.0 },
+                    { x: -165, z: -110, dir: -1, col: 0x7f1d1d, cab: 0xf8fafc, sc: 1.2 },
+                    { x: 85, z: 185, dir: -1, col: 0x334155, cab: 0x38bdf8, sc: 1.05 },
+                    { x: -95, z: -195, dir: 1, col: 0x4338ca, cab: 0xf8fafc, sc: 1.1 },
+                    { x: 220, z: -140, dir: 1, col: 0x065f46, cab: 0xfacc15, sc: 1.15 },
+                    { x: -230, z: 150, dir: -1, col: 0x7c2d12, cab: 0xf8fafc, sc: 1.1 }
                 ];
                 const diffCfg = getStageDifficulty(stageNum);
                 shipConfigs.forEach((scfg, i) => {
@@ -998,7 +1080,7 @@
                         mesh: sObj.mesh,
                         dmgFlame: sObj.dmgFlame,
                         dir: scfg.dir,
-                        speed: 0.16 + (i % 3) * 0.05 + diffCfg.tier * 0.02,
+                        speed: 0.18 + (i % 3) * 0.05 + diffCfg.tier * 0.02,
                         hw: 4.5 * scfg.sc,
                         hd: 14.5 * scfg.sc,
                         hp: diffCfg.shipHp,
@@ -1006,13 +1088,15 @@
                         destroyed: false
                     });
                 });
+
+                spawnSeaFleetBoats(true);
             } else {
                 const skyColors = [0x87ceeb, 0x7dd3fc, 0x93c5fd, 0xfde68a, 0xa5f3fc];
                 const skyHex = skyColors[(stageNum - 1) % skyColors.length];
                 scene.background = new THREE.Color(skyHex);
-                scene.fog = new THREE.FogExp2(skyHex, 0.003);
+                scene.fog = new THREE.FogExp2(skyHex, 0.0024);
 
-                const groundGeo = new THREE.PlaneGeometry(520, 520);
+                const groundGeo = new THREE.PlaneGeometry(760, 760);
                 groundGeo.rotateX(-Math.PI / 2);
                 const ground = new THREE.Mesh(
                     groundGeo,
@@ -1022,21 +1106,22 @@
                 cityGroup.add(ground);
 
                 const roadMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
-                for (let gx = -128; gx <= 128; gx += BLOCK_STEP) {
-                    const gGeo = new THREE.PlaneGeometry(0.35, 360);
+                for (let gx = -160; gx <= 160; gx += BLOCK_STEP) {
+                    const gGeo = new THREE.PlaneGeometry(0.35, 420);
                     gGeo.rotateX(-Math.PI / 2);
                     const line = new THREE.Mesh(gGeo, roadMat);
                     line.position.set(gx, 0.01, 0);
                     cityGroup.add(line);
                 }
-                for (let gz = -128; gz <= 128; gz += BLOCK_STEP) {
-                    const zGeo = new THREE.PlaneGeometry(360, 0.35);
+                for (let gz = -160; gz <= 160; gz += BLOCK_STEP) {
+                    const zGeo = new THREE.PlaneGeometry(420, 0.35);
                     zGeo.rotateX(-Math.PI / 2);
                     const line = new THREE.Mesh(zGeo, roadMat);
                     line.position.set(0, 0.01, gz);
                     cityGroup.add(line);
                 }
 
+                // شہر کا وسیع سمندری ساحل / جھیل
                 const wGeo = new THREE.PlaneGeometry(WATER_ZONE.w, WATER_ZONE.d);
                 wGeo.rotateX(-Math.PI / 2);
                 const waterMesh = new THREE.Mesh(
@@ -1047,10 +1132,10 @@
                 cityGroup.add(waterMesh);
 
                 const bColors = ['#1e293b', '#1e3a8a', '#312e81', '#0f766e', '#7c2d12'];
-                for (let bx = -96; bx <= 96; bx += BLOCK_STEP) {
-                    for (let bz = -96; bz <= 96; bz += BLOCK_STEP) {
+                for (let bx = -128; bx <= 128; bx += BLOCK_STEP) {
+                    for (let bz = -128; bz <= 128; bz += BLOCK_STEP) {
                         if (Math.abs(bx) < 16 && Math.abs(bz) < 20) continue;
-                        if (Math.abs(bx - WATER_ZONE.x) < WATER_ZONE.w * 0.6 && Math.abs(bz - WATER_ZONE.z) < WATER_ZONE.d * 0.6) continue;
+                        if (Math.abs(bx - WATER_ZONE.x) < WATER_ZONE.w * 0.56 && Math.abs(bz - WATER_ZONE.z) < WATER_ZONE.d * 0.56) continue;
                         const w = 13;
                         const d = 13;
                         const h = 12 + ((Math.abs(bx * 7 + bz * 13 + stageNum * 5) % 5) * 5);
@@ -1066,6 +1151,8 @@
                         buildings.push({ x: cx, z: cz, hw: w / 2, hd: d / 2 });
                     }
                 }
+
+                spawnSeaFleetBoats(false);
             }
         }
 
@@ -1178,27 +1265,6 @@
             return { mesh: tank, turret, dmgFlame };
         }
 
-        function createBoat() {
-            const boat = new THREE.Group();
-            const hull = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.9, 5.8), new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90 }));
-            hull.position.set(0, 0.45, 0);
-            const noseGeo = new THREE.ConeGeometry(1.85, 2.2, 4);
-            noseGeo.rotateY(Math.PI / 4);
-            noseGeo.rotateX(-Math.PI / 2);
-            const nose = new THREE.Mesh(noseGeo, new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90 }));
-            nose.position.set(0, 0.45, -3.9);
-            const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.66, 0.25, 5.85), new THREE.MeshLambertMaterial({ color: 0x0ea5e9 }));
-            stripe.position.set(0, 0.58, 0);
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 1.8), new THREE.MeshLambertMaterial({ color: 0x38bdf8 }));
-            cabin.position.set(0, 1.08, 0.4);
-            const gunGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8);
-            gunGeo.rotateX(Math.PI / 2);
-            const twinGun = new THREE.Mesh(gunGeo, new THREE.MeshLambertMaterial({ color: 0x1e293b }));
-            twinGun.position.set(0, 1.05, -2.2);
-            boat.add(hull, nose, stripe, cabin, twinGun);
-            return boat;
-        }
-
         const sportsCar = createRealisticCar(0xdc2626, 'sports');
         sportsCar.mesh.position.set(0, 0, 12);
         scene.add(sportsCar.mesh);
@@ -1207,7 +1273,8 @@
         tankObj.mesh.position.set(-10, 0, 10);
         scene.add(tankObj.mesh);
 
-        const boatMesh = createBoat();
+        const playerBoatObj = createBoat(0xf8fafc, 0x0ea5e9);
+        const boatMesh = playerBoatObj.mesh;
         boatMesh.position.set(WATER_ZONE.x, 0.1, WATER_ZONE.z);
         boatMesh.visible = false;
         scene.add(boatMesh);
@@ -1215,7 +1282,7 @@
         const vehicles = [
             { id: 'car', name: 'اسپورٹس کار', mesh: sportsCar.mesh, wheels: sportsCar.wheels, bodyMat: sportsCar.bodyMat, dmgFlame: sportsCar.dmgFlame, origColor: sportsCar.origColor, speed: 0, heading: 0, radius: 2.2, type: 'ground', hp: 180, maxHp: 180, destroyed: false, unlocked: true },
             { id: 'tank', name: 'ٹینک 🛡️', mesh: tankObj.mesh, turret: tankObj.turret, dmgFlame: tankObj.dmgFlame, wheels: [], speed: 0, heading: 0, radius: 3.6, type: 'tank', hp: 400, maxHp: 400, destroyed: false, unlocked: true },
-            { id: 'boat', name: 'بوٹ 🚤', mesh: boatMesh, wheels: [], speed: 0, heading: 0, radius: 2.4, type: 'water', hp: 250, maxHp: 250, destroyed: false, unlocked: false }
+            { id: 'boat', name: 'بوٹ 🚤', mesh: boatMesh, dmgFlame: playerBoatObj.dmgFlame, bodyMat: playerBoatObj.bodyMat, origColor: playerBoatObj.origColor, wheels: [], speed: 0, heading: 0, radius: 2.4, type: 'water', hp: 250, maxHp: 250, destroyed: false, unlocked: false }
         ];
 
         const trafficColors = [0x2563eb, 0x16a34a, 0xeab308, 0x9333ea, 0x06b6d4, 0xf97316, 0xec4899, 0x64748b];
@@ -1582,7 +1649,7 @@
                 const boatVeh = vehicles.find(v => v.id === 'boat');
                 boatVeh.unlocked = true;
                 boatMesh.visible = true;
-                boatMesh.position.set(isCurrentStageSea ? 44 : WATER_ZONE.x, 0.1, isCurrentStageSea ? 10 : WATER_ZONE.z);
+                boatMesh.position.set(isCurrentStageSea ? 48 : WATER_ZONE.x, 0.1, isCurrentStageSea ? 10 : WATER_ZONE.z);
             }
             playSound(523, 1046, 0.22, 'triangle', 0.22);
             showStageBanner('🛒 نیا آئٹم خرید لیا گیا!');
@@ -1590,27 +1657,51 @@
             syncShopButtons();
         }
 
+        function resetWorldCollectiblesAndFires() {
+            for (let f of fires) scene.remove(f.mesh);
+            fires.length = 0;
+            for (let r of repairPickups) scene.remove(r);
+            repairPickups.length = 0;
+            for (let c of coins) scene.remove(c);
+            coins.length = 0;
+
+            for (let i = 0; i < 6; i++) spawnFire();
+            for (let i = 0; i < 6; i++) spawnRepairPickup();
+            for (let i = 0; i < 28; i++) spawnCoin();
+        }
+
         function onStageTransitionSetup(stageNum) {
             const seaStage = stageNum >= 16;
             const boatVeh = vehicles.find(v => v.id === 'boat');
+            const activeCh = characters[activeCharIdx];
+
             if (seaStage) {
                 ownedItems.boat = true;
                 boatVeh.unlocked = true;
                 repairVehicleFull(boatVeh);
                 boatMesh.visible = true;
-                boatMesh.position.set(44, 0.1, 10);
+                boatMesh.position.set(48, 0.1, 10);
                 boatVeh.heading = Math.PI / 2;
                 boatMesh.rotation.y = Math.PI / 2;
-                characters[activeCharIdx].inVehicle = boatVeh;
+                activeCh.inVehicle = boatVeh;
             } else {
                 boatMesh.visible = ownedItems.boat;
-                if (characters[activeCharIdx].inVehicle && characters[activeCharIdx].inVehicle.type === 'water') {
-                    repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
-                    characters[activeCharIdx].inVehicle = vehicles[0];
+                if (ownedItems.boat) {
+                    boatMesh.position.set(WATER_ZONE.x, 0.1, WATER_ZONE.z);
+                }
+                repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
+                repairAndPlaceVehicle(vehicles[1], new THREE.Vector3(-10, 0, 10));
+                if (activeCh.inVehicle && activeCh.inVehicle.type === 'water') {
+                    activeCh.inVehicle = vehicles[0];
+                } else if (!activeCh.inVehicle) {
+                    activeCh.mesh.position.set(2.5, 0, 12);
                 }
             }
 
             const yFloor = seaStage ? 0.7 : 0;
+            policeWanted = false;
+            document.getElementById('wanted-badge').style.display = 'none';
+
             policeCars.forEach((pc, idx) => {
                 pc.active = false;
                 pc.destroyed = false;
@@ -1623,6 +1714,20 @@
                 if (pc.copRef) { pc.copRef.exited = false; pc.copRef.arrestingGuard = null; pc.copRef.char.mesh.visible = false; }
                 pc.mesh.position.set(idx === 0 ? 18 : -18, yFloor, idx === 0 ? -14 : -24);
             });
+
+            if (!seaStage) {
+                trafficCars.forEach((tc, i) => {
+                    tc.destroyed = false;
+                    tc.hijacked = false;
+                    tc.stopTimer = 0;
+                    tc.hp = tc.maxHp;
+                    tc.mesh.visible = true;
+                    tc.mesh.position.set(laneX[i % laneX.length], 0, -45 + i * 16);
+                    tc.mesh.rotation.set(0, Math.PI, 0);
+                    if (tc.bodyMat && tc.origColor) tc.bodyMat.color.setHex(tc.origColor);
+                    if (tc.dmgFlame) { tc.dmgFlame.visible = false; tc.dmgFlame.scale.setScalar(1.0); }
+                });
+            }
 
             footPatrolCops.forEach(fp => {
                 fp.arrestingTarget = null;
@@ -1638,6 +1743,8 @@
                 npc.mesh.rotation.x = 0;
                 npc.mesh.position.set((i - 7.5) * 3.2, yFloor, 4 - (i % 5) * 6);
             });
+
+            resetWorldCollectiblesAndFires();
         }
 
         for (let i = 0; i < 2; i++) {
@@ -1693,7 +1800,7 @@
         for (let i = 0; i < 8; i++) {
             const gf = gangFactions[i % 2];
             const gm = createCharacter(`Gang-${i + 1}`, gf.shirt, gf.pants, 0.98, true, { isGang: true, hairColor: gf.hair, hasBeard: i % 2 === 1 });
-            gm.clan = gf.clan; gm.alive = false; gm.arrested = false; gm.hp = 60; gm.shootCooldown = 30 + i * 10; gm.respawnTimer = 0;
+            gm.clan = gf.clan; gm.alive = false; gm.arrested = false; gm.hp = 70; gm.shootCooldown = 30 + i * 10; gm.respawnTimer = 0;
             gm.mesh.visible = false; gm.mesh.position.set(0, -50, 0);
             scene.add(gm.mesh);
             gangMembers.push(gm);
@@ -1706,7 +1813,7 @@
 
         for (let i = 0; i < 8; i++) {
             const guard = createCharacter(`Guard-${i + 1}`, 0x7f1d1d, 0x0f172a, 1.05, true, { hasCap: i % 2 === 0, isGang: true });
-            guard.mesh.visible = false; guard.mesh.position.set(0, -50, 0); guard.alive = false; guard.arrested = false; guard.hp = 60;
+            guard.mesh.visible = false; guard.mesh.position.set(0, -50, 0); guard.alive = false; guard.arrested = false; guard.hp = 85;
             scene.add(guard.mesh);
             bossArmy.push(guard);
         }
@@ -1749,7 +1856,7 @@
             document.getElementById('boss-hp').innerText = bossHp;
             document.getElementById('boss-hud').style.display = 'block';
             const hardTag = diff.label ? ` [${diff.label}]` : '';
-            showStageBanner(`👹 ${getCurrentCityName()} کا دشمن اور گینگ آرمی آ گئی!${hardTag}`);
+            showStageBanner(`👹 ${getCurrentCityName()} کا طاقتور دشمن (${bossHp} HP) اور گینگ آرمی آ گئی!${hardTag}`);
             playSound(160, 75, 0.35, 'sawtooth', 0.25);
         }
 
@@ -1769,6 +1876,13 @@
         function onBossDefeated() {
             if (!bossActive) return;
             hideBossAndArmy();
+
+            // تمام پرانی گولیاں صاف کریں
+            for (let k = projectiles.length - 1; k >= 0; k--) {
+                scene.remove(projectiles[k].mesh);
+            }
+            projectiles.length = 0;
+
             score += 150;
             coinsBalance += 40;
 
@@ -1776,18 +1890,23 @@
                 const clearedStage = currentStage;
                 currentStage++;
                 const diff = getStageDifficulty(currentStage);
+                // یقینی بنائیں کہ اگلے اسٹیج کا ہدف موجودہ سکور سے واضح طور پر زیادہ ہو
                 stageTargetScore = score + diff.scoreStep;
                 playerHp = MAX_PLAYER_HP;
+
                 buildCityForStage(currentStage);
                 onStageTransitionSetup(currentStage);
                 spawnGangWarGroup(currentStage);
+
                 const newCity = getCurrentCityName();
-                const seaNote = isCurrentStageSea ? '\n🚤 سمندری مشن! بوٹ تیار ہے اور جہازوں پر حملہ کریں' : '';
+                const seaNote = isCurrentStageSea ? '\n🚤 وسیع سمندری مشن! بوٹس کا بیڑا اور جہاز تیار ہیں' : '';
                 const hardNote = diff.label ? `\n⚠️ مشکل درجہ: ${diff.label}` : '';
-                showStageBanner(`🏆 اسٹیج ${clearedStage} کلیئر!\nنیا اسٹیج ${currentStage}: ${newCity} (ٹارگٹ: ${stageTargetScore})${hardNote}${seaNote}`);
+                showStageBanner(`🏆 اسٹیج ${clearedStage} کلیئر!\nنیا اسٹیج ${currentStage}: ${newCity}\nاگلا ٹارگٹ: ${stageTargetScore}${hardNote}${seaNote}`);
                 playSound(523, 1046, 0.4, 'triangle', 0.28);
             } else {
+                stageTargetScore = score + 5000;
                 showStageBanner('🏆 مبارک ہو! تمام 20 اسٹیجز اور شہر مکمل!');
+                playSound(523, 1046, 0.5, 'triangle', 0.3);
             }
             updateHUD();
         }
@@ -1800,7 +1919,7 @@
                 } catch (e) {}
             }
 
-            if (!isGameOver && !bossActive && score >= stageTargetScore) {
+            if (gameStarted && !isGameOver && !bossActive && score >= stageTargetScore) {
                 spawnStageBoss();
             }
 
@@ -1888,7 +2007,7 @@
         const repMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
         function spawnRepairPickup() {
             const m = new THREE.Mesh(repGeo, repMat);
-            if (isCurrentStageSea) m.position.set((Math.random() - 0.5) * 56, 1.2, (Math.random() - 0.5) * 56);
+            if (isCurrentStageSea) m.position.set((Math.random() - 0.5) * 60, 1.2, (Math.random() - 0.5) * 60);
             else m.position.set((Math.floor(Math.random() * 5) - 2) * BLOCK_STEP, 1.0, (Math.random() - 0.5) * 170);
             scene.add(m);
             repairPickups.push(m);
@@ -1900,7 +2019,7 @@
         function spawnCoin() {
             const c = new THREE.Mesh(coinGeo, coinMat);
             if (isCurrentStageSea) {
-                c.position.set((Math.random() - 0.5) * 180, 1.2, (Math.random() - 0.5) * 180);
+                c.position.set((Math.random() - 0.5) * 260, 1.2, (Math.random() - 0.5) * 260);
             } else {
                 const rx = (Math.floor(Math.random() * 7) - 3) * BLOCK_STEP;
                 c.position.set(rx + (Math.random() - 0.5) * 8, 1.0, (Math.random() - 0.5) * 200);
@@ -2023,9 +2142,7 @@
 
         buildCityForStage(1);
         spawnGangWarGroup(1);
-        for (let i = 0; i < 6; i++) spawnFire();
-        for (let i = 0; i < 6; i++) spawnRepairPickup();
-        for (let i = 0; i < 28; i++) spawnCoin();
+        resetWorldCollectiblesAndFires();
 
         // ================= کنٹرولز اور ایونٹس =================
         let selectedStartIndex = 0;
@@ -2139,7 +2256,7 @@
                 const v = ch.inVehicle;
                 let exitWorldPos;
                 if (v.type === 'water' && isCurrentStageSea) {
-                    exitWorldPos = new THREE.Vector3(28, 0.7, 10);
+                    exitWorldPos = new THREE.Vector3(31, 0.7, 10);
                 } else {
                     const exitOff = new THREE.Vector3(3.0, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), v.heading);
                     exitWorldPos = v.mesh.position.clone().add(exitOff);
@@ -2152,11 +2269,17 @@
                 triggerPoliceChase();
             } else {
                 let nearest = null;
-                let minDist = 13.5;
+                let minDist = 14.5;
                 for (let v of vehicles) {
                     if (!v.unlocked) continue;
                     const d = ch.mesh.position.distanceTo(v.mesh.position);
                     if (d < minDist) { minDist = d; nearest = v; }
+                }
+                // سمندری اسپیڈ بوٹس میں بھی سوار ہونے کی سہولت
+                for (let sb of seaBoats) {
+                    if (!sb.mesh.visible) continue;
+                    const d = ch.mesh.position.distanceTo(sb.mesh.position);
+                    if (d < minDist) { minDist = d; nearest = sb; }
                 }
                 if (!isCurrentStageSea) {
                     for (let tc of trafficCars) {
@@ -2171,15 +2294,15 @@
                 }
                 if (nearest) {
                     if (nearest.destroyed) repairAndPlaceVehicle(nearest, nearest.mesh.position);
-                    if (trafficCars.includes(nearest) || policeCars.includes(nearest)) {
+                    if (trafficCars.includes(nearest) || policeCars.includes(nearest) || seaBoats.includes(nearest)) {
                         if (!nearest.hijacked) {
                             nearest.hijacked = true;
                             nearest.active = false;
                             score += 45;
                             coinsBalance += 15;
-                            showStageBanner(policeCars.includes(nearest) ? '🚓 پولیس کار قبضے میں لے لی!' : '🚘 گاڑی چھین لی! پولیس پیچھے لگ گئی');
+                            showStageBanner(seaBoats.includes(nearest) ? '🚤 اسپیڈ بوٹ قبضے میں لے لی!' : (policeCars.includes(nearest) ? '🚓 پولیس کار قبضے میں لے لی!' : '🚘 گاڑی چھین لی! پولیس پیچھے لگ گئی'));
                         }
-                        triggerPoliceChase();
+                        if (!seaBoats.includes(nearest)) triggerPoliceChase();
                     }
                     nearest.speed = 0;
                     nearest.heading = nearest.mesh.rotation.y;
@@ -2196,13 +2319,17 @@
             const ch = characters[activeCharIdx];
             if (isCurrentStageSea) {
                 const boatVeh = vehicles.find(x => x.id === 'boat');
-                repairAndPlaceVehicle(boatVeh, new THREE.Vector3(44, 0.1, 10));
+                repairAndPlaceVehicle(boatVeh, new THREE.Vector3(48, 0.1, 10));
                 ch.inVehicle = boatVeh;
             } else if (ch.inVehicle) {
                 const v = ch.inVehicle;
-                const snapX = Math.round(v.mesh.position.x / BLOCK_STEP) * BLOCK_STEP;
-                const snapZ = Math.round(v.mesh.position.z / BLOCK_STEP) * BLOCK_STEP;
-                repairAndPlaceVehicle(v, new THREE.Vector3(snapX, v.type === 'water' ? 0.1 : 0, snapZ));
+                if (v.type === 'water') {
+                    repairAndPlaceVehicle(v, new THREE.Vector3(WATER_ZONE.x, 0.1, WATER_ZONE.z));
+                } else {
+                    const snapX = Math.round(v.mesh.position.x / BLOCK_STEP) * BLOCK_STEP;
+                    const snapZ = Math.round(v.mesh.position.z / BLOCK_STEP) * BLOCK_STEP;
+                    repairAndPlaceVehicle(v, new THREE.Vector3(snapX, 0, snapZ));
+                }
             } else {
                 repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
                 ch.mesh.position.set(2.8, 0, 12);
@@ -2216,20 +2343,6 @@
             isPaused = false;
             policeWanted = false;
             document.getElementById('wanted-badge').style.display = 'none';
-            policeCars.forEach((pc, idx) => {
-                pc.active = false; pc.destroyed = false; pc.hijacked = false; pc.hp = pc.maxHp; pc.mesh.visible = true;
-                if (pc.bodyMat && pc.origColor) pc.bodyMat.color.setHex(pc.origColor);
-                if (pc.dmgFlame) { pc.dmgFlame.visible = false; pc.dmgFlame.scale.setScalar(1.0); }
-                if (pc.copRef) { pc.copRef.exited = false; pc.copRef.arrestingGuard = null; pc.copRef.char.mesh.visible = false; }
-                pc.mesh.position.set(idx === 0 ? 18 : -18, 0, idx === 0 ? -14 : -24);
-            });
-            trafficCars.forEach((tc, i) => {
-                tc.destroyed = false; tc.hijacked = false; tc.stopTimer = 0; tc.hp = tc.maxHp; tc.mesh.visible = true;
-                tc.mesh.position.set(laneX[i % laneX.length], 0, -45 + i * 16);
-                tc.mesh.rotation.set(0, Math.PI, 0);
-                if (tc.bodyMat && tc.origColor) tc.bodyMat.color.setHex(tc.origColor);
-                if (tc.dmgFlame) { tc.dmgFlame.visible = false; tc.dmgFlame.scale.setScalar(1.0); }
-            });
             projectiles.forEach(p => scene.remove(p.mesh));
             projectiles.length = 0;
             currentStage = 1;
@@ -2243,8 +2356,6 @@
             buildCityForStage(1);
             onStageTransitionSetup(1);
             spawnGangWarGroup(1);
-            repairAndPlaceVehicle(vehicles[0], new THREE.Vector3(0, 0, 12));
-            repairAndPlaceVehicle(vehicles[1], new THREE.Vector3(-10, 0, 10));
             characters[activeCharIdx].inVehicle = vehicles[0];
             updateHUD();
         });
@@ -2274,8 +2385,8 @@
         // ================= ٹکراؤ کا نظام =================
         function isInsideWater(x, z) {
             if (isCurrentStageSea) {
-                const onIsland = Math.abs(x) < 33 && Math.abs(z) < 33;
-                const inBounds = Math.abs(x) < 305 && Math.abs(z) < 305;
+                const onIsland = Math.abs(x) < 37 && Math.abs(z) < 37;
+                const inBounds = Math.abs(x) < 670 && Math.abs(z) < 670;
                 return !onIsland && inBounds;
             }
             return Math.abs(x - WATER_ZONE.x) < (WATER_ZONE.w / 2 - 2.0) &&
@@ -2283,7 +2394,7 @@
         }
 
         function isInsideHarborIsland(x, z) {
-            return Math.abs(x) < 33.5 && Math.abs(z) < 33.5;
+            return Math.abs(x) < 37.5 && Math.abs(z) < 37.5;
         }
 
         function damageSeaShip(ship, amount) {
@@ -2449,13 +2560,13 @@
             mCtx.clearRect(0, 0, 116, 116);
             mCtx.fillStyle = isCurrentStageSea ? '#0369a1' : '#0f172a';
             mCtx.fillRect(0, 0, 116, 116);
-            const sc = 0.24, cx = 58, cy = 58;
+            const sc = 0.22, cx = 58, cy = 58;
 
             if (isCurrentStageSea) {
                 const ix = cx + (0 - centerPos.x) * sc;
                 const iz = cy + (0 - centerPos.z) * sc;
                 mCtx.fillStyle = '#64748b';
-                mCtx.fillRect(ix - 34 * sc, iz - 34 * sc, 68 * sc, 68 * sc);
+                mCtx.fillRect(ix - 38 * sc, iz - 38 * sc, 76 * sc, 76 * sc);
 
                 mCtx.fillStyle = '#facc15';
                 seaShips.forEach(s => {
@@ -2464,7 +2575,7 @@
             } else {
                 const wx = cx + (WATER_ZONE.x - centerPos.x) * sc;
                 const wz = cy + (WATER_ZONE.z - centerPos.z) * sc;
-                mCtx.fillStyle = 'rgba(2, 132, 199, 0.7)';
+                mCtx.fillStyle = 'rgba(2, 132, 199, 0.75)';
                 mCtx.fillRect(wx - (WATER_ZONE.w * sc) / 2, wz - (WATER_ZONE.d * sc) / 2, WATER_ZONE.w * sc, WATER_ZONE.d * sc);
 
                 mCtx.fillStyle = '#60a5fa';
@@ -2475,6 +2586,14 @@
                     mCtx.fill();
                 });
             }
+
+            // منی میپ پر اسپیڈ بوٹس دکھائیں
+            mCtx.fillStyle = '#4ade80';
+            seaBoats.forEach(sb => {
+                mCtx.beginPath();
+                mCtx.arc(cx + (sb.mesh.position.x - centerPos.x) * sc, cy + (sb.mesh.position.z - centerPos.z) * sc, 2.5, 0, Math.PI * 2);
+                mCtx.fill();
+            });
 
             if (bossActive) {
                 mCtx.fillStyle = '#f43f5e';
@@ -2505,6 +2624,7 @@
                 f.f2.rotation.y += 0.1;
             }
 
+            // سمندری بحری جہازوں کی حرکت
             if (isCurrentStageSea) {
                 seaShips.forEach(s => {
                     if (s.dmgFlame && s.hp < s.maxHp * 0.5) {
@@ -2513,11 +2633,32 @@
                     if (!s.destroyed) {
                         s.mesh.position.z += s.dir * s.speed;
                         s.mesh.position.y = 0.2 + Math.sin(tick * 3 + s.mesh.position.x) * 0.12;
-                        if (s.mesh.position.z > 210) { s.dir = -1; s.mesh.rotation.y = 0; }
-                        if (s.mesh.position.z < -210) { s.dir = 1; s.mesh.rotation.y = Math.PI; }
+                        if (s.mesh.position.z > 320) { s.dir = -1; s.mesh.rotation.y = 0; }
+                        if (s.mesh.position.z < -320) { s.dir = 1; s.mesh.rotation.y = Math.PI; }
                     }
                 });
             }
+
+            // سمندر اور جھیل میں چلنے والی AI اسپیڈ بوٹس
+            seaBoats.forEach((sb, idx) => {
+                if (sb.dmgFlame && sb.hp < sb.maxHp * 0.5) {
+                    sb.dmgFlame.scale.y = 1.0 + Math.sin(tick * 10) * 0.25;
+                }
+                if (sb.destroyed || sb.hijacked) return;
+
+                const nextX = sb.mesh.position.x - Math.sin(sb.heading) * sb.baseSpeed;
+                const nextZ = sb.mesh.position.z - Math.cos(sb.heading) * sb.baseSpeed;
+
+                if (isInsideWater(nextX, nextZ)) {
+                    sb.mesh.position.x = nextX;
+                    sb.mesh.position.z = nextZ;
+                    sb.heading += Math.sin(tick * 0.7 + idx) * 0.008;
+                } else {
+                    sb.heading += Math.PI * 0.75;
+                }
+                sb.mesh.position.y = 0.1 + Math.sin(tick * 5 + idx) * 0.06;
+                sb.mesh.rotation.y = sb.heading;
+            });
 
             const activeChar = characters[activeCharIdx];
             const playerPos = activeChar.inVehicle ? activeChar.inVehicle.mesh.position : activeChar.mesh.position;
@@ -3053,10 +3194,10 @@
                 if (v.destroyed) {
                     v.speed = 0;
                 } else if (v.type === 'water') {
-                    const maxSpd = keys.nitro ? 1.25 : 0.85;
-                    if (keys.gas) v.speed += 0.03;
-                    if (keys.brake) v.speed -= 0.034;
-                    v.speed = Math.max(-0.38, Math.min(maxSpd, v.speed)) * 0.965;
+                    const maxSpd = keys.nitro ? 1.35 : 0.92;
+                    if (keys.gas) v.speed += 0.032;
+                    if (keys.brake) v.speed -= 0.036;
+                    v.speed = Math.max(-0.42, Math.min(maxSpd, v.speed)) * 0.965;
                     if (Math.abs(v.speed) > 0.015) {
                         const dir = v.speed > 0 ? 1 : -1;
                         if (keys.left) v.heading += 0.048 * dir;
@@ -3078,6 +3219,21 @@
                                 }
                                 break;
                             }
+                        }
+                    }
+
+                    // دوسری بوٹس سے ٹکراؤ چیک کریں
+                    for (let sb of seaBoats) {
+                        if (sb === v || sb.destroyed) continue;
+                        if (Math.hypot(nx - sb.mesh.position.x, nz - sb.mesh.position.z) < 4.4) {
+                            hitShip = true;
+                            if (Math.abs(v.speed) > 0.08) {
+                                spawnSparks(sb.mesh.position, 0xfacc15, 8);
+                                damageVehicle(sb, Math.abs(v.speed) * 40);
+                                damageVehicle(v, 6);
+                                playSound(140, 40, 0.18, 'triangle', 0.2);
+                            }
+                            break;
                         }
                     }
 
@@ -3162,8 +3318,10 @@
 
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const p = projectiles[i];
+                if (!p) continue;
                 p.mesh.position.add(p.vel);
                 p.life--;
+                let stageClearedNow = false;
 
                 if (p.isEnemy) {
                     if (bossActive) {
@@ -3185,7 +3343,10 @@
                             spawnSparks(bossChar.mesh.position, 0x60a5fa, 6);
                             p.life = 0;
                             document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
-                            if (bossHp <= 0) { onBossDefeated(); break; }
+                            if (bossHp <= 0) {
+                                onBossDefeated();
+                                stageClearedNow = true;
+                            }
                         }
                     } else if (Math.hypot(p.mesh.position.x - playerPos.x, p.mesh.position.z - playerPos.z) < 2.2) {
                         p.life = 0;
@@ -3214,6 +3375,18 @@
                             if (s.destroyed) continue;
                             if (Math.abs(p.mesh.position.x - s.mesh.position.x) < s.hw && Math.abs(p.mesh.position.z - s.mesh.position.z) < s.hd) {
                                 damageSeaShip(s, dmgAmt);
+                                p.life = 0;
+                                break;
+                            }
+                        }
+                    }
+
+                    // سمندری اسپیڈ بوٹس پر فائرنگ کا اثر
+                    if (p.life > 0) {
+                        for (let sb of seaBoats) {
+                            if (sb.destroyed || sb === activeChar.inVehicle) continue;
+                            if (Math.hypot(p.mesh.position.x - sb.mesh.position.x, p.mesh.position.z - sb.mesh.position.z) < 3.0) {
+                                damageVehicle(sb, dmgAmt);
                                 p.life = 0;
                                 break;
                             }
@@ -3298,13 +3471,11 @@
                         document.getElementById('boss-hp').innerText = Math.max(0, bossHp);
                         if (bossHp <= 0) {
                             onBossDefeated();
-                            scene.remove(p.mesh);
-                            projectiles.splice(i, 1);
-                            break;
+                            stageClearedNow = true;
                         }
                     }
 
-                    if (p.life > 0) {
+                    if (!stageClearedNow && p.life > 0) {
                         for (let k = 0; k < npcs.length; k++) {
                             const npc = npcs[k];
                             if (npc.dead) continue;
@@ -3318,6 +3489,8 @@
                         }
                     }
                 }
+
+                if (stageClearedNow) break;
 
                 if (p.life <= 0) {
                     scene.remove(p.mesh);

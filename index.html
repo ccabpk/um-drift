@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ur">
 <head>
@@ -450,7 +449,6 @@
             <div class="char-pick-row">
                 <button class="char-pick-btn selected" id="pick-usama" onclick="selectStartChar(0)">
                     <div class="avatar-frame">
-                        <!-- Usama SVG Portrait -->
                         <svg viewBox="0 0 100 100" width="76" height="76" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <pattern id="greenCheck1" width="4" height="4" patternUnits="userSpaceOnUse">
@@ -491,7 +489,6 @@
 
                 <button class="char-pick-btn" id="pick-musa" onclick="selectStartChar(1)">
                     <div class="avatar-frame">
-                        <!-- Musa SVG Portrait -->
                         <svg viewBox="0 0 100 100" width="76" height="76" xmlns="http://www.w3.org/2000/svg">
                             <defs>
                                 <pattern id="greenCheck2" width="4" height="4" patternUnits="userSpaceOnUse">
@@ -667,11 +664,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // ================= آن لائن اسٹیٹس چیک =================
+        if (typeof THREE === 'undefined') {
+            document.getElementById('online-status').innerText = '❌ Three.js لوڈ نہیں ہو سکا، انٹرنیٹ چیک کریں';
+        }
+
         function updateOnlineBadge() {
             try {
                 const statusEl = document.getElementById('online-status');
-                if (statusEl) {
+                if (statusEl && typeof THREE !== 'undefined') {
                     statusEl.innerText = navigator.onLine
                         ? '🌐 آن لائن موڈ فعال • Three.js تیار'
                         : '⚠️ انٹرنیٹ کنکشن چیک کریں (آن لائن گیم)';
@@ -760,7 +760,6 @@
             sprint: false
         };
 
-        // ================= اسٹیج 15 کے بعد اسٹیپ بائے اسٹیپ مشکل =================
         function getStageDifficulty(stageNum = currentStage) {
             if (stageNum <= 15) {
                 return {
@@ -903,7 +902,10 @@
             const hull = new THREE.Mesh(new THREE.BoxGeometry(8.2, 2.6, 26), hullMat);
             hull.position.set(0, 1.3, 0);
 
-            const bow = new THREE.Mesh(new THREE.ConeGeometry(5.8, 5.5, 4).rotateY(Math.PI / 4).rotateX(-Math.PI / 2), hullMat);
+            const bowGeo = new THREE.ConeGeometry(5.8, 5.5, 4);
+            bowGeo.rotateY(Math.PI / 4);
+            bowGeo.rotateX(-Math.PI / 2);
+            const bow = new THREE.Mesh(bowGeo, hullMat);
             bow.position.set(0, 1.3, -15.5);
 
             const deck = new THREE.Mesh(new THREE.BoxGeometry(7.6, 0.3, 24), deckMat);
@@ -947,8 +949,10 @@
                 scene.background = new THREE.Color(0x0284c7);
                 scene.fog = new THREE.FogExp2(0x0369a1, 0.0022);
 
+                const seaGeo = new THREE.PlaneGeometry(640, 640);
+                seaGeo.rotateX(-Math.PI / 2);
                 const seaMesh = new THREE.Mesh(
-                    new THREE.PlaneGeometry(640, 640).rotateX(-Math.PI / 2),
+                    seaGeo,
                     new THREE.MeshPhongMaterial({ color: 0x0369a1, shininess: 90 })
                 );
                 seaMesh.position.y = -0.15;
@@ -1008,8 +1012,10 @@
                 scene.background = new THREE.Color(skyHex);
                 scene.fog = new THREE.FogExp2(skyHex, 0.003);
 
+                const groundGeo = new THREE.PlaneGeometry(520, 520);
+                groundGeo.rotateX(-Math.PI / 2);
                 const ground = new THREE.Mesh(
-                    new THREE.PlaneGeometry(520, 520).rotateX(-Math.PI / 2),
+                    groundGeo,
                     new THREE.MeshLambertMaterial({ color: 0x334155 })
                 );
                 ground.position.y = -0.05;
@@ -1017,18 +1023,24 @@
 
                 const roadMat = new THREE.MeshBasicMaterial({ color: 0xfacc15 });
                 for (let gx = -128; gx <= 128; gx += BLOCK_STEP) {
-                    const line = new THREE.Mesh(new THREE.PlaneGeometry(0.35, 360).rotateX(-Math.PI / 2), roadMat);
+                    const gGeo = new THREE.PlaneGeometry(0.35, 360);
+                    gGeo.rotateX(-Math.PI / 2);
+                    const line = new THREE.Mesh(gGeo, roadMat);
                     line.position.set(gx, 0.01, 0);
                     cityGroup.add(line);
                 }
                 for (let gz = -128; gz <= 128; gz += BLOCK_STEP) {
-                    const line = new THREE.Mesh(new THREE.PlaneGeometry(360, 0.35).rotateX(-Math.PI / 2), roadMat);
+                    const zGeo = new THREE.PlaneGeometry(360, 0.35);
+                    zGeo.rotateX(-Math.PI / 2);
+                    const line = new THREE.Mesh(zGeo, roadMat);
                     line.position.set(0, 0.01, gz);
                     cityGroup.add(line);
                 }
 
+                const wGeo = new THREE.PlaneGeometry(WATER_ZONE.w, WATER_ZONE.d);
+                wGeo.rotateX(-Math.PI / 2);
                 const waterMesh = new THREE.Mesh(
-                    new THREE.PlaneGeometry(WATER_ZONE.w, WATER_ZONE.d).rotateX(-Math.PI / 2),
+                    wGeo,
                     new THREE.MeshPhongMaterial({ color: 0x0284c7, shininess: 95 })
                 );
                 waterMesh.position.set(WATER_ZONE.x, 0.04, WATER_ZONE.z);
@@ -1121,8 +1133,10 @@
             dmgFlame.visible = false;
             car.add(dmgFlame);
 
-            const tireGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.36, 16).rotateZ(Math.PI / 2);
-            const rimGeo = new THREE.CylinderGeometry(0.27, 0.27, 0.38, 12).rotateZ(Math.PI / 2);
+            const tireGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.36, 16);
+            tireGeo.rotateZ(Math.PI / 2);
+            const rimGeo = new THREE.CylinderGeometry(0.27, 0.27, 0.38, 12);
+            rimGeo.rotateZ(Math.PI / 2);
             const wheels = [];
             [[-1.14, 0.45, -1.5], [1.14, 0.45, -1.5], [-1.14, 0.45, 1.5], [1.14, 0.45, 1.5]].forEach(p => {
                 const wg = new THREE.Group();
@@ -1139,6 +1153,8 @@
             const tank = new THREE.Group();
             const hullMat = new THREE.MeshLambertMaterial({ color: 0x3f6212 });
             const trackMat = new THREE.MeshLambertMaterial({ color: 0x18181b });
+            const gunGeo = new THREE.CylinderGeometry(0.16, 0.18, 3.2, 12);
+            gunGeo.rotateX(Math.PI / 2);
             const gunMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
 
             const hull = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.05, 5.4), hullMat);
@@ -1150,7 +1166,7 @@
             const turret = new THREE.Group();
             turret.position.set(0, 1.55, 0.1);
             const dome = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.75, 2.3), hullMat);
-            const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 3.2, 12).rotateX(Math.PI / 2), gunMat);
+            const barrel = new THREE.Mesh(gunGeo, gunMat);
             barrel.position.set(0, 0.05, -2.3);
             turret.add(dome, barrel);
 
@@ -1166,13 +1182,18 @@
             const boat = new THREE.Group();
             const hull = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.9, 5.8), new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90 }));
             hull.position.set(0, 0.45, 0);
-            const nose = new THREE.Mesh(new THREE.ConeGeometry(1.85, 2.2, 4).rotateY(Math.PI / 4).rotateX(-Math.PI / 2), new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90 }));
+            const noseGeo = new THREE.ConeGeometry(1.85, 2.2, 4);
+            noseGeo.rotateY(Math.PI / 4);
+            noseGeo.rotateX(-Math.PI / 2);
+            const nose = new THREE.Mesh(noseGeo, new THREE.MeshPhongMaterial({ color: 0xf8fafc, shininess: 90 }));
             nose.position.set(0, 0.45, -3.9);
             const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.66, 0.25, 5.85), new THREE.MeshLambertMaterial({ color: 0x0ea5e9 }));
             stripe.position.set(0, 0.58, 0);
             const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 1.8), new THREE.MeshLambertMaterial({ color: 0x38bdf8 }));
             cabin.position.set(0, 1.08, 0.4);
-            const twinGun = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8).rotateX(Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x1e293b }));
+            const gunGeo = new THREE.CylinderGeometry(0.08, 0.08, 1.4, 8);
+            gunGeo.rotateX(Math.PI / 2);
+            const twinGun = new THREE.Mesh(gunGeo, new THREE.MeshLambertMaterial({ color: 0x1e293b }));
             twinGun.position.set(0, 1.05, -2.2);
             boat.add(hull, nose, stripe, cabin, twinGun);
             return boat;
@@ -1392,12 +1413,14 @@
             }
 
             const cuffMat = new THREE.MeshPhongMaterial({ color: 0xe2e8f0, shininess: 100 });
-            const leftCuffRing = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.018, 8, 14).rotateX(Math.PI / 2), cuffMat);
+            const cuffRingGeo = new THREE.TorusGeometry(0.082, 0.018, 8, 14);
+            cuffRingGeo.rotateX(Math.PI / 2);
+            const leftCuffRing = new THREE.Mesh(cuffRingGeo, cuffMat);
             leftCuffRing.position.set(0, -0.46, 0);
             leftCuffRing.visible = false;
             leftArm.add(leftCuffRing);
 
-            const rightCuffRing = new THREE.Mesh(new THREE.TorusGeometry(0.082, 0.018, 8, 14).rotateX(Math.PI / 2), cuffMat);
+            const rightCuffRing = new THREE.Mesh(cuffRingGeo, cuffMat);
             rightCuffRing.position.set(0, -0.46, 0);
             rightCuffRing.visible = false;
             rightArm.add(rightCuffRing);
@@ -1414,7 +1437,7 @@
                 rightArm.add(gunMesh);
             }
 
-            grp.add(pelvis, belt, buckle, torso, collar, neck, headGroup, leftLeg, rightLeg, leftArm, rightArm);
+            grp.add(pelvis, belt, buckle, torso, neck, headGroup, leftLeg, rightLeg, leftArm, rightArm);
             grp.scale.set(scale, scale, scale);
 
             return {
@@ -1871,7 +1894,8 @@
             repairPickups.push(m);
         }
 
-        const coinGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 14).rotateX(Math.PI / 2);
+        const coinGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.2, 14);
+        coinGeo.rotateX(Math.PI / 2);
         const coinMat = new THREE.MeshLambertMaterial({ color: 0xfacc15 });
         function spawnCoin() {
             const c = new THREE.Mesh(coinGeo, coinMat);
@@ -1896,11 +1920,13 @@
                 mat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
                 spd = 3.2; life = 85;
             } else if (type === 'rocket') {
-                geo = new THREE.CylinderGeometry(0.18, 0.18, 0.9, 8).rotateX(Math.PI / 2);
+                geo = new THREE.CylinderGeometry(0.18, 0.18, 0.9, 8);
+                geo.rotateX(Math.PI / 2);
                 mat = new THREE.MeshBasicMaterial({ color: 0xf97316 });
                 spd = 2.2; life = 75;
             } else if (type === 'laser') {
-                geo = new THREE.CylinderGeometry(0.1, 0.1, 2.2, 6).rotateX(Math.PI / 2);
+                geo = new THREE.CylinderGeometry(0.1, 0.1, 2.2, 6);
+                geo.rotateX(Math.PI / 2);
                 mat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
                 spd = 4.2; life = 55;
             } else if (type === 'machinegun') {
@@ -1995,7 +2021,6 @@
             updateHUD();
         }
 
-        // ابتدائی دنیا اور آئٹمز بنائیں
         buildCityForStage(1);
         spawnGangWarGroup(1);
         for (let i = 0; i < 6; i++) spawnFire();
@@ -3353,8 +3378,9 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        animate();
+        if (typeof THREE !== 'undefined') {
+            animate();
+        }
     </script>
 </body>
 </html>
-```
